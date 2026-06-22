@@ -1,0 +1,36 @@
+package core
+
+import (
+	"context"
+	"log/slog"
+)
+
+func (r *Raft) AppendEntries(
+	ctx context.Context,
+	req AppendEntriesRequest,
+) AppendEntriesResponse {
+
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if err := r.state.Follow(req.Term); err != nil {
+		slog.WarnContext(ctx, "failed to follow", "error", err)
+		return AppendEntriesResponse{Term: r.state.Term, Success: false}
+	}
+
+	if !r.log.Contains(req.PrevLogID) {
+		slog.WarnContext(ctx, "missing prev log", "log_id", req.PrevLogID)
+		return AppendEntriesResponse{Term: r.state.Term, Success: false}
+	}
+
+	if len(req.Entries) == 0 {
+		return AppendEntriesResponse{Term: r.state.Term, Success: true}
+	}
+
+	if err := r.log.AppendAfter(req.PrevLogID, req.Entries...); err != nil {
+		slog.WarnContext(ctx, "failed to append log", "error", err)
+		return AppendEntriesResponse{Term: r.state.Term, Success: false}
+	}
+	return AppendEntriesResponse{Term: r.state.Term, Success: true}
+}
+
