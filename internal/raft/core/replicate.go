@@ -1,4 +1,4 @@
-package core 
+package core
 
 import (
 	"context"
@@ -7,61 +7,52 @@ import (
 )
 
 func (r *Raft) replicateLogTail(ctx context.Context, prev LogID) error {
-
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	r.mu.RLock()
-
-	state := r.state
-	self := r.cluster.Self.ID
 	peers := append([]Node(nil), r.cluster.Peers...)
-	entries, err := r.log.EntriesAfter(prev)
-
+	quorum := r.cluster.Quorum()
 	r.mu.RUnlock()
-
-	if err != nil {
-		return fmt.Errorf("get log entries after: %w", err)
-	}
-
-	req := AppendEntriesRequest{
-		LeaderID:  self,
-		Term:      state.Term,
-		PrevLogID: prev,
-		Entries:   entries,
-	}
 
 	replRes := make(chan ReplicationResult, len(peers))
 	for _, peer := range peers {
-		go r.replicateLogTailTo(ctx, peer, req, replRes)
+		go r.replicateLogTailTo(ctx, peer, prev, replRes)
 	}
+
+	accepted, failed := 1, 0
 
 	for range len(peers) {
 		select {
 		case <-ctx.Done():
+			if accepted >= quorum.Accept {
+				return nil
+			}
 			return ctx.Err()
 
 		case res := <-replRes:
 			switch res.Outcome {
 			case ReplicateAccepted:
-				// all good
+				accepted++
 
-			case ReplicateRejected:
-				slog.WarnContext(ctx, "replication rejected", "peer", res.Peer)
-				return ErrPeerRejected
-
-			case ReplicateTransportError:
-				slog.ErrorContext(ctx, "transport", "peer", res.Peer, "error", res.Error)
-				return res.Error
+			case ReplicateFailed:
+				slog.ErrorContext(ctx, "replication failed", "peer", res.Peer.ID, "error", res.Error)
+				failed++
+				if failed >= quorum.Reject {
+					return ErrQuorumNotReached
+				}
 
 			case ReplicateHigherTerm:
-				slog.WarnContext(ctx, "step down", "peer", res.Peer, "old_term", state.Term, "new_term", res.Term)
 				r.mu.Lock()
 				r.state.StepDown(res.Term)
 				r.mu.Unlock()
 				return ErrNotLeader
 			}
 		}
+	}
+
+	if accepted < quorum.Accept {
+		return ErrQuorumNotReached
 	}
 	return nil
 }
@@ -70,9 +61,8 @@ type ReplicationOutcome int
 
 const (
 	ReplicateAccepted ReplicationOutcome = iota
-	ReplicateRejected
-	ReplicateTransportError
 	ReplicateHigherTerm
+	ReplicateFailed
 )
 
 type ReplicationResult struct {
@@ -86,37 +76,59 @@ type ReplicationResult struct {
 func (r *Raft) replicateLogTailTo(
 	ctx context.Context,
 	peer Node,
-	req AppendEntriesRequest,
+	prev LogID,
 	results chan<- ReplicationResult,
 ) {
-	rsp, err := r.transport.AppendEntries(ctx, peer, req)
+	for {
+		if err := ctx.Err(); err != nil {
+			results <- ReplicationResult{Peer: peer, Outcome: ReplicateFailed, Error: err}
+			return
+		}
+		req, err := r.makeAppendEntriesRequest(prev)
+		if err != nil {
+			results <- ReplicationResult{Peer: peer, Outcome: ReplicateFailed, Error: err}
+			return
+		}
+		rsp, err := r.logTransport.AppendEntries(ctx, peer, req)
+		if err != nil {
+			results <- ReplicationResult{Peer: peer, Outcome: ReplicateFailed, Error: err}
+			return
+		}
+		if rsp.Term > req.Term {
+			results <- ReplicationResult{Peer: peer, Outcome: ReplicateHigherTerm, Term: rsp.Term}
+			return
+		}
+		if rsp.Success {
+			results <- ReplicationResult{Peer: peer, Outcome: ReplicateAccepted, Term: rsp.Term}
+			return
+		}
+		// on reject
+
+		r.mu.RLock()
+		prev, err = r.log.PrevLogID(prev)
+		r.mu.RUnlock()
+		if err != nil {
+			err = fmt.Errorf("access previous log: %w", err)
+			results <- ReplicationResult{Peer: peer, Outcome: ReplicateFailed, Error: err}
+			return
+		}
+	}
+}
+
+func (r *Raft) makeAppendEntriesRequest(prev LogID) (AppendEntriesRequest, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	entries, err := r.log.EntriesAfter(prev)
 	if err != nil {
-		results <- ReplicationResult{
-			Peer:    peer,
-			Outcome: ReplicateTransportError,
-			Error:   err,
-		}
-		return
+		return AppendEntriesRequest{}, err
 	}
-	if rsp.Term > req.Term {
-		results <- ReplicationResult{
-			Peer:    peer,
-			Outcome: ReplicateHigherTerm,
-			Term:    rsp.Term,
-		}
-		return
+
+	req := AppendEntriesRequest{
+		LeaderID:  r.cluster.Self.ID,
+		Term:      r.state.Term,
+		PrevLogID: prev,
+		Entries:   entries,
 	}
-	if !rsp.Success {
-		results <- ReplicationResult{
-			Peer:    peer,
-			Outcome: ReplicateRejected,
-			Term:    rsp.Term,
-		}
-		return
-	}
-	results <- ReplicationResult{
-		Peer:    peer,
-		Outcome: ReplicateAccepted,
-		Term:    rsp.Term,
-	}
+	return req, nil
 }

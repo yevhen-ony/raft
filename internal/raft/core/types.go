@@ -1,4 +1,4 @@
-package core 
+package core
 
 type NodeID string
 
@@ -15,8 +15,8 @@ const (
 )
 
 type LogID struct {
-	Index Index 
-	Term Term 
+	Index Index
+	Term  Term
 }
 
 type LogEntry struct {
@@ -24,9 +24,8 @@ type LogEntry struct {
 	Command []byte
 }
 
-
 type Node struct {
-	ID NodeID
+	ID   NodeID
 	Addr string
 }
 
@@ -38,8 +37,17 @@ type AppendEntriesRequest struct {
 }
 
 type AppendEntriesResponse struct {
-	Term    Term 
+	Term    Term
 	Success bool
 }
 
+type VoteRequest struct {
+	CandidateID NodeID
+	Term        Term
+	LastLogID   LogID
+}
 
+type VoteResponse struct {
+	Term    Term
+	Granted bool
+}

@@ -20,4 +20,22 @@ func NewCluster(config *Config) *Cluster {
 	return &cluster
 }
 
+func (cl *Cluster) Size() int {
+	return len(cl.Peers) + 1
+}
+
+type Quorum struct {
+	Accept int
+	Reject int
+}
+
+func (cl *Cluster) Quorum() Quorum {
+	size := cl.Size()
+  	accept := size/2 + 1
+
+  	return Quorum{
+  		Accept: accept,
+  		Reject: size - accept + 1,
+  	}
+}
 

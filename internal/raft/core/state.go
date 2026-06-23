@@ -1,8 +1,9 @@
-package core 
+package core
 
 type State struct {
-	Term Term
-	Role Role
+	Term     Term
+	Role     Role
+	VotedFor NodeID
 }
 
 func NewState(config *Config) *State {

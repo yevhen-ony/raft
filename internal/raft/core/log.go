@@ -22,6 +22,18 @@ func (l *Log) LastLogID() LogID {
 	return l.entries[last].LogID
 }
 
+func (l *Log) PrevLogID(target LogID) (LogID, error) {
+	pos, err := l.search(target)
+	if err != nil {
+		return LogID{}, err
+	}
+	if pos == 0 {
+		return LogID{}, ErrNoPrevLog
+	}
+	prev := l.entries[pos-1]	
+	return prev.LogID, nil
+}
+
 func (l *Log) Append(entries ...LogEntry) error {
 	last := l.LastLogID()
 	if err := l.validate(last, entries...); err != nil {
@@ -82,4 +94,12 @@ func (l *Log) search(target LogID) (int, error) {
 		return 0, ErrLogMismatch
 	}
 	return pos, nil
+}
+
+func (l *Log) IsUpToDate(target LogID) bool {
+  	last := l.LastLogID()
+  	if target.Term != last.Term {
+  		return target.Term > last.Term
+  	}
+  	return target.Index >= last.Index
 }

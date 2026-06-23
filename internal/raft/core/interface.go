@@ -4,7 +4,11 @@ import (
 	"context"
 )
 
-type Transport interface {
+type LogEntryTransport interface {
 	AppendEntries(context.Context, Node, AppendEntriesRequest) (AppendEntriesResponse, error)
+}
+
+type VoteTransport interface {
+	RequestVote(context.Context, Node, VoteRequest) (VoteResponse, error)
 }
 

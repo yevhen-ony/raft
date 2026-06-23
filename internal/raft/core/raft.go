@@ -8,35 +8,49 @@ import (
 )
 
 type RaftDeps struct {
-	Transport Transport
-	Config    *Config
+	LogTransport  LogEntryTransport
+	VoteTransport VoteTransport
+	Config        *Config
 }
 
 type Raft struct {
-	cluster   *Cluster
-	state     *State
-	log       *Log
-	transport Transport
+	cluster *Cluster
+	state   *State
+	log     *Log
 
-	mu sync.RWMutex
+	logTransport  LogEntryTransport
+	voteTransport VoteTransport
+
+	mu  sync.RWMutex
+	cfg *Config
 }
 
 func NewRaft(deps RaftDeps) (*Raft, error) {
-	if deps.Transport == nil {
-		return nil, errors.New("missing transport")
+	if deps.LogTransport == nil {
+		return nil, errors.New("missing log transport")
+	}
+	if deps.Config == nil {
+		return nil, errors.New("missing config")
 	}
 	r := &Raft{
-		cluster:   NewCluster(deps.Config),
-		state:     NewState(deps.Config),
-		log:       NewLog(),
-		transport: deps.Transport,
+		cluster: NewCluster(deps.Config),
+		state:   NewState(deps.Config),
+		log:     NewLog(),
+
+		logTransport:  deps.LogTransport,
+		voteTransport: deps.VoteTransport,
+
+		cfg: deps.Config, 
 	}
 	return r, nil
 }
 
 func (r *Raft) Propose(ctx context.Context, cmd []byte) error {
-	if err := r.ensureLeader(); err != nil {
-		return err
+	r.mu.RLock()
+	role := r.state.Role 
+	r.mu.RUnlock()
+	if role != Leader {
+		return ErrNotLeader
 	}
 
 	prev, err := r.appendToLog(cmd)
@@ -48,16 +62,6 @@ func (r *Raft) Propose(ctx context.Context, cmd []byte) error {
 		return fmt.Errorf("replicate log tail: %w", err)
 	}
 
-	return nil
-}
-
-func (r *Raft) ensureLeader() error {
-	r.mu.RLock()
-	defer r.mu.RUnlock()
-
-	if r.state.Role != Leader {
-		return ErrNotLeader
-	}
 	return nil
 }
 
