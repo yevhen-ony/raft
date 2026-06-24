@@ -3,14 +3,14 @@ package core
 import (
 	"context"
 	"errors"
-	"fmt"
 	"sync"
 )
 
 type RaftDeps struct {
-	LogTransport  LogEntryTransport
-	VoteTransport VoteTransport
-	Config        *Config
+	LogTransport   LogEntryTransport
+	VoteTransport  VoteTransport
+	CommandApplier CommandApplier
+	Config         *Config
 }
 
 type Raft struct {
@@ -18,11 +18,14 @@ type Raft struct {
 	state   *State
 	log     *Log
 
+	commandApplier CommandApplier
+
 	logTransport  LogEntryTransport
 	voteTransport VoteTransport
 
-	leaderSeen chan struct{}
-	roleChanged chan struct{}
+	leaderSeen    chan struct{}
+	roleChanged   chan struct{}
+	commitChanged chan struct{}
 
 	mu  sync.RWMutex
 	cfg *Config
@@ -35,67 +38,28 @@ func NewRaft(deps RaftDeps) (*Raft, error) {
 	if deps.Config == nil {
 		return nil, errors.New("missing config")
 	}
+	if deps.CommandApplier == nil {
+		deps.CommandApplier = noopCommandHandler{}
+	}
 	r := &Raft{
 		cluster: NewCluster(deps.Config),
 		state:   NewState(deps.Config),
 		log:     NewLog(),
 
+		commandApplier: deps.CommandApplier,
+
 		logTransport:  deps.LogTransport,
 		voteTransport: deps.VoteTransport,
 
-		leaderSeen: make(chan struct{}, 1),
-		roleChanged: make(chan struct{}, 1),
-		
-		cfg: deps.Config, 
+		leaderSeen:    make(chan struct{}, 1),
+		roleChanged:   make(chan struct{}, 1),
+		commitChanged: make(chan struct{}, 1),
+
+		cfg: deps.Config,
 	}
 	return r, nil
 }
 
-func (r *Raft) Propose(ctx context.Context, cmd []byte) error {
-	r.mu.RLock()
-	role := r.state.Role 
-	r.mu.RUnlock()
-	if role != Leader {
-		return ErrNotLeader
-	}
+type noopCommandHandler struct{}
 
-	prev, err := r.appendToLog(cmd)
-	if err != nil {
-		return fmt.Errorf("append to log: %w", err)
-	}
-
-	if err := r.replicateLogTail(ctx, prev); err != nil {
-		return fmt.Errorf("replicate log tail: %w", err)
-	}
-
-	return nil
-}
-
-func (r *Raft) appendToLog(commands ...[]byte) (LogID, error) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	prev := r.log.LastLogID()
-
-	entries := r.makeEntries(prev.Index+1, commands...)
-	if err := r.log.Append(entries...); err != nil {
-		return LogID{}, err
-	}
-	return prev, nil
-}
-
-func (r *Raft) makeEntries(index Index, commands ...[]byte) []LogEntry {
-	entries := make([]LogEntry, len(commands))
-	for i, cmd := range commands {
-		entry := LogEntry{
-			LogID: LogID{
-				Index: index,
-				Term:  r.state.Term,
-			},
-			Command: cmd,
-		}
-		entries[i] = entry
-		index++
-	}
-	return entries
-}
+func (noopCommandHandler) Apply(context.Context, []byte) error { return nil }

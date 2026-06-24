@@ -17,19 +17,16 @@ func (r *Raft) AppendEntries(
 		slog.WarnContext(ctx, "observe leader failes", "term", req.Term, "error", err)
 		return AppendEntriesResponse{Term: r.state.Term, Success: false}
 	}
-
 	if !r.log.Contains(req.PrevLogID) {
 		slog.WarnContext(ctx, "missing prev log", "log_id", req.PrevLogID)
 		return AppendEntriesResponse{Term: r.state.Term, Success: false}
 	}
-
-	if len(req.Entries) == 0 {
-		return AppendEntriesResponse{Term: r.state.Term, Success: true}
+	if len(req.Entries) > 0 {
+		if err := r.log.AppendAfter(req.PrevLogID, req.Entries...); err != nil {
+			slog.WarnContext(ctx, "failed to append log", "error", err)
+			return AppendEntriesResponse{Term: r.state.Term, Success: false}
+		}
 	}
-
-	if err := r.log.AppendAfter(req.PrevLogID, req.Entries...); err != nil {
-		slog.WarnContext(ctx, "failed to append log", "error", err)
-		return AppendEntriesResponse{Term: r.state.Term, Success: false}
-	}
+	r.followCommit(req.CommitIndex)
 	return AppendEntriesResponse{Term: r.state.Term, Success: true}
 }

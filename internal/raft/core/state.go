@@ -1,9 +1,11 @@
 package core
 
 type State struct {
-	Term     Term
-	Role     Role
-	VotedFor NodeID
+	Term        Term
+	Role        Role
+	VotedFor    NodeID
+	CommitIndex Index
+	LastApplied Index
 }
 
 func NewState(config *Config) *State {
@@ -14,6 +16,11 @@ func NewState(config *Config) *State {
 		votedFor = config.Self.ID
 	}
 
-	return &State{Term: 1, Role: role, VotedFor: votedFor}
+	return &State{
+		Term: 0,
+		Role: role,
+		VotedFor: votedFor,
+		CommitIndex: 0,
+		LastApplied: 0,
+	}
 }
-

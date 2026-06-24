@@ -4,6 +4,10 @@ import (
 	"context"
 )
 
+type CommandApplier interface {
+	Apply(context.Context, []byte) error 
+}
+
 type LogEntryTransport interface {
 	AppendEntries(context.Context, Node, AppendEntriesRequest) (AppendEntriesResponse, error)
 }

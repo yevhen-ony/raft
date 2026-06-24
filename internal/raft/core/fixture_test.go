@@ -39,6 +39,10 @@ func setupCluster(tt *testing.T) *clusterFixture {
 	f.transport.register(f.node2.ID, f.n2)
 	f.transport.register(f.node3.ID, f.n3)
 
+	f.n1.state.Term = 1
+	f.n2.state.Term = 1
+	f.n3.state.Term = 1
+
 	return f
 }
 

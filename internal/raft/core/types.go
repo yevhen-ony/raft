@@ -30,10 +30,11 @@ type Node struct {
 }
 
 type AppendEntriesRequest struct {
-	LeaderID  NodeID
-	Term      Term
-	PrevLogID LogID
-	Entries   []LogEntry
+	LeaderID    NodeID
+	Term        Term
+	PrevLogID   LogID
+	Entries     []LogEntry
+	CommitIndex Index
 }
 
 type AppendEntriesResponse struct {

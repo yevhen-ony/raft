@@ -23,7 +23,7 @@ func (l *Log) LastLogID() LogID {
 }
 
 func (l *Log) PrevLogID(target LogID) (LogID, error) {
-	pos, err := l.search(target)
+	pos, err := l.searchAndMatch(target)
 	if err != nil {
 		return LogID{}, err
 	}
@@ -45,7 +45,7 @@ func (l *Log) Append(entries ...LogEntry) error {
 }
 
 func (l *Log) EntriesAfter(target LogID) ([]LogEntry, error) {
-	pos, err := l.search(target)
+	pos, err := l.searchAndMatch(target)
 	if err != nil {
 		return nil, err
 	}
@@ -54,7 +54,7 @@ func (l *Log) EntriesAfter(target LogID) ([]LogEntry, error) {
 }
 
 func (l *Log) AppendAfter(prev LogID, entries ...LogEntry) error {
-	pos, err := l.search(prev)
+	pos, err := l.searchAndMatch(prev)
 	if err != nil {
 		return err
 	}
@@ -66,8 +66,10 @@ func (l *Log) AppendAfter(prev LogID, entries ...LogEntry) error {
 }
 
 func (l *Log) Contains(target LogID) bool {
-	_, err := l.search(target) 
-	return err == nil
+	if _, err := l.searchAndMatch(target); err != nil {
+		return false
+	}
+	return true 
 }
 
 func (l *Log) validate(prev LogID, entries ...LogEntry) error {
@@ -83,18 +85,34 @@ func (l *Log) validate(prev LogID, entries ...LogEntry) error {
 	return nil
 }
 
-func (l *Log) search(target LogID) (int, error) {
+func (l *Log) search(index Index) (int, error) {
 	pos := sort.Search(len(l.entries), func(i int) bool {
-		return l.entries[i].Index >= target.Index
+		return l.entries[i].Index >= index
 	})
 	if pos == len(l.entries) {
 		return 0, ErrLogNotFound
 	}
-	if target != l.entries[pos].LogID {
-		return 0, ErrLogMismatch
+	return pos, nil
+}
+
+func (l *Log) match(i int, target LogID) error {
+	if l.entries[i].LogID != target {
+		return ErrLogMismatch 
+	}
+	return nil
+}
+
+func (l *Log) searchAndMatch(target LogID) (int, error) {
+	pos, err := l.search(target.Index)
+	if err != nil {
+		return 0, err 
+	}
+	if err := l.match(pos, target); err != nil {
+		return 0, err
 	}
 	return pos, nil
 }
+
 
 func (l *Log) IsUpToDate(target LogID) bool {
   	last := l.LastLogID()
@@ -102,4 +120,12 @@ func (l *Log) IsUpToDate(target LogID) bool {
   		return target.Term > last.Term
   	}
   	return target.Index >= last.Index
+}
+
+func (l *Log) GetEntry(index Index) (LogEntry, error) {
+	pos, err := l.search(index) 
+	if err != nil {
+		return LogEntry{}, err
+	}
+	return l.entries[pos], nil
 }

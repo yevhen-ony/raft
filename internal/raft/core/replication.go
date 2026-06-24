@@ -128,10 +128,11 @@ func (r *Raft) makeAppendEntriesRequest(prev LogID) (AppendEntriesRequest, error
 	}
 
 	req := AppendEntriesRequest{
-		LeaderID:  r.cluster.Self.ID,
-		Term:      r.state.Term,
-		PrevLogID: prev,
-		Entries:   entries,
+		LeaderID:    r.cluster.Self.ID,
+		Term:        r.state.Term,
+		PrevLogID:   prev,
+		Entries:     entries,
+		CommitIndex: r.state.CommitIndex,
 	}
 	return req, nil
 }
