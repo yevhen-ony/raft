@@ -5,6 +5,7 @@ import "errors"
 var (
 	ErrNotLeader        = errors.New("not a leader")
 	ErrNotCandidate     = errors.New("not a candidate")
+	ErrNotFollower      = errors.New("not a follower")
 	ErrLeader           = errors.New("is leader")
 	ErrPeerRejected     = errors.New("peer rejected")
 	ErrOutdatedTerm     = errors.New("outdated term")

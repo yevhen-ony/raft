@@ -13,8 +13,8 @@ func (r *Raft) AppendEntries(
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if err := r.state.Follow(req.Term); err != nil {
-		slog.WarnContext(ctx, "failed to follow", "error", err)
+	if err := r.observeLeader(req.Term); err != nil {
+		slog.WarnContext(ctx, "observe leader failes", "term", req.Term, "error", err)
 		return AppendEntriesResponse{Term: r.state.Term, Success: false}
 	}
 
@@ -33,4 +33,3 @@ func (r *Raft) AppendEntries(
 	}
 	return AppendEntriesResponse{Term: r.state.Term, Success: true}
 }
-

@@ -20,8 +20,8 @@ func (r *Raft) replicateLogTail(ctx context.Context, prev LogID) error {
 		go r.replicateLogTailTo(ctx, peer, prev, replRes)
 	}
 
-	accepted, failed := 1, 0
-
+	accepted, rejected := 1, 0
+LOOP:
 	for range len(peers) {
 		select {
 		case <-ctx.Done():
@@ -34,17 +34,20 @@ func (r *Raft) replicateLogTail(ctx context.Context, prev LogID) error {
 			switch res.Outcome {
 			case ReplicateAccepted:
 				accepted++
+				if accepted >= quorum.Accept {
+					break LOOP
+				}
 
 			case ReplicateFailed:
 				slog.ErrorContext(ctx, "replication failed", "peer", res.Peer.ID, "error", res.Error)
-				failed++
-				if failed >= quorum.Reject {
-					return ErrQuorumNotReached
+				rejected++
+				if rejected >= quorum.Reject {
+					break LOOP
 				}
 
 			case ReplicateHigherTerm:
 				r.mu.Lock()
-				r.state.StepDown(res.Term)
+				r.becomeFollower(res.Term)
 				r.mu.Unlock()
 				return ErrNotLeader
 			}

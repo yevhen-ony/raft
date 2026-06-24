@@ -1,0 +1,11 @@
+.gocache/
+
+# Go build/test outputs
+*.test
+*.out
+coverage.out
+
+# Local editor/OS files
+.DS_Store
+.idea/
+.vscode/

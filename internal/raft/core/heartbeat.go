@@ -7,35 +7,37 @@ import (
 	"time"
 )
 
-func (r *Raft) RunHeartbeatLoop(ctx context.Context, interval time.Duration) error {
-  	ticker := time.NewTicker(interval)
-  	defer ticker.Stop()
+func (r *Raft) RunHeartbeatLoop(ctx context.Context) error {
+	ticker := time.NewTicker(r.cfg.HeartbeatInterval)
+	defer ticker.Stop()
 
-  	for {
-  		select {
-  		case <-ctx.Done():
-  			return ctx.Err()
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
 
-  		case <-ticker.C:
-  			if err := r.Heartbeat(ctx); err != nil {
-  				if errors.Is(err, ErrNotLeader) {
-  					return err
-  				}
-  				slog.WarnContext(ctx, "heartbeat failed", "error", err)
-  			}
-  		}
-  	}
+		case <-ticker.C:
+			if err := r.Heartbeat(ctx); err != nil {
+				if errors.Is(err, ErrNotLeader) || errors.Is(err, ErrOutdatedTerm) {
+					return nil
+				}
+				slog.WarnContext(ctx, "hearbeat failed", "error", err)
+			}
+		case <-r.roleChanged:
+			return nil
+		}
+	}
 }
 
 func (r *Raft) Heartbeat(ctx context.Context) error {
-  	r.mu.RLock()
+	r.mu.RLock()
 	role := r.state.Role
-  	prev := r.log.LastLogID()
+	prev := r.log.LastLogID()
 	r.mu.RUnlock()
 
 	if role != Leader {
 		return ErrNotLeader
 	}
 
-  	return r.replicateLogTail(ctx, prev)
+	return r.replicateLogTail(ctx, prev)
 }

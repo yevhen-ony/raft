@@ -2,6 +2,9 @@ package core
 
 import (
 	"context"
+	"fmt"
+	"math/rand/v2"
+	"time"
 )
 
 type election struct {
@@ -19,9 +22,9 @@ func (r *Raft) startElection() (election, error) {
 		return election{}, ErrLeader
 	}
 
-	r.state.Term++
-	r.state.Role = Candidate
-	r.state.VotedFor = r.cluster.Self.ID
+	if err := r.becomeCandidate(); err != nil {
+		return election{}, fmt.Errorf("become candidate: %w", err)
+	}
 
 	e := election{
 		req: VoteRequest{
@@ -36,17 +39,18 @@ func (r *Raft) startElection() (election, error) {
 	return e, nil
 }
 
-func (r *Raft) RunElection(ctx context.Context) error {
+func (r *Raft) RunElection(ctx context.Context) (bool, error) {
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
 	e, err := r.startElection()
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	granted, denied := 1, 0
+	term := e.req.Term
 
 	voteRes := make(chan VoteResult, len(e.peers))
 	for _, peer := range e.peers {
@@ -57,7 +61,7 @@ LOOP:
 	for range len(e.peers) {
 		select {
 		case <-ctx.Done():
-			return ctx.Err()
+			return false, ctx.Err()
 
 		case res := <-voteRes:
 			switch res.Outcome {
@@ -69,24 +73,31 @@ LOOP:
 			case VoteFailed, VoteDenied:
 				denied++
 				if denied >= e.quorum.Reject {
-					return ErrElectionLost
+					break LOOP
 				}
 			case VoteHigherTerm:
-				r.mu.Lock()
-				r.state.StepDown(res.Term)
-				r.mu.Unlock()
-				return ErrOutdatedTerm
+				term = res.Term
+				break LOOP
 			}
 		}
 	}
 
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	if term > e.req.Term {
+		r.becomeFollower(term)
+		return false, nil
+	}
 	if granted < e.quorum.Accept {
-		return ErrElectionLost
+		r.becomeFollower(e.req.Term)
+		return false, nil
 	}
-	if err := r.promoteToLeader(e.req.Term); err != nil {
-		return err
+	if err := r.becomeLeader(e.req.Term); err != nil {
+		r.becomeFollower(e.req.Term)
+		return false, err
 	}
-	return nil
+	return true, nil
 }
 
 type VoteOutcome int
@@ -131,18 +142,6 @@ func (r *Raft) requestVote(
 	results <- VoteResult{Peer: peer, Outcome: VoteDenied, Term: rsp.Term}
 }
 
-func (r *Raft) promoteToLeader(term Term) error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
-	if r.state.Term != term || r.state.Role != Candidate {
-		return ErrNotCandidate
-	}
-
-	r.state.Role = Leader
-	return nil
-}
-
 func (r *Raft) Vote(_ context.Context, req VoteRequest) VoteResponse {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -152,8 +151,7 @@ func (r *Raft) Vote(_ context.Context, req VoteRequest) VoteResponse {
 	}
 
 	if r.state.Term < req.Term {
-		r.state.StepDown(req.Term)
-		r.state.VotedFor = ""
+		r.becomeFollower(req.Term)
 	}
 
 	if r.state.VotedFor != "" && r.state.VotedFor != req.CandidateID {
@@ -168,3 +166,51 @@ func (r *Raft) Vote(_ context.Context, req VoteRequest) VoteResponse {
 	return VoteResponse{Term: r.state.Term, Granted: true}
 }
 
+func (r *Raft) nextElectionTimeout() time.Duration {
+
+	minDur := r.cfg.ElectionTimeoutMin
+	maxDur := r.cfg.ElectionTimeoutMax
+	if minDur >= maxDur {
+		return minDur
+	}
+
+	steps := []int{0, 2, 4, 6, 8, 10}
+	i := rand.IntN(len(steps))
+
+	delta := maxDur - minDur
+	return minDur + delta*time.Duration(steps[i])/10
+}
+
+func (r *Raft) observeLeader(term Term) error {
+	if r.state.Term > term {
+		return ErrOutdatedTerm
+	}
+
+	r.becomeFollower(term)
+
+	select {
+	case r.leaderSeen <- struct{}{}:
+	default: // non-blocking
+	}
+
+	return nil
+}
+
+func (r *Raft) RunElectionLoop(ctx context.Context) error {
+	timer := time.NewTimer(r.nextElectionTimeout())
+	defer timer.Stop()
+
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+
+		case <-r.leaderSeen:
+			timer.Reset(r.nextElectionTimeout())
+
+		case <-timer.C:
+			_, err := r.RunElection(ctx)
+			return err
+		}
+	}
+}

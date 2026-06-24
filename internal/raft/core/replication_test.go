@@ -111,6 +111,7 @@ func TestReplication_ProposeReplicatesSequentialEntries(tt *testing.T) {
 	ctx := context.Background()
 
 	c := setupCluster(tt)
+	c.transport.unregister("n3")
 
 	require.NoError(tt, c.n1.Propose(ctx, []byte("one")))
 	require.NoError(tt, c.n1.Propose(ctx, []byte("two")))
@@ -193,6 +194,7 @@ func TestReplication_LeaderBacktracksWhenFollowerIsBehind(tt *testing.T) {
 
 	c := setupCluster(tt)
 	leader, follower := c.n1, c.n2
+	c.transport.unregister("n3")
 
 	require.NoError(tt, leader.log.Append(
 		LogEntry{LogID: LogID{Index: 1, Term: 1}, Command: []byte("one")},
@@ -220,6 +222,7 @@ func TestReplication_LeaderBacktracksAndReplacesFollowerConflict(tt *testing.T) 
 
 	c := setupCluster(tt)
 	leader, follower := c.n1, c.n2
+	c.transport.unregister("n3")
 
 	require.NoError(tt, leader.log.Append(
 		LogEntry{LogID: LogID{Index: 1, Term: 1}, Command: []byte("one")},

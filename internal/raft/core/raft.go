@@ -21,6 +21,9 @@ type Raft struct {
 	logTransport  LogEntryTransport
 	voteTransport VoteTransport
 
+	leaderSeen chan struct{}
+	roleChanged chan struct{}
+
 	mu  sync.RWMutex
 	cfg *Config
 }
@@ -40,6 +43,9 @@ func NewRaft(deps RaftDeps) (*Raft, error) {
 		logTransport:  deps.LogTransport,
 		voteTransport: deps.VoteTransport,
 
+		leaderSeen: make(chan struct{}, 1),
+		roleChanged: make(chan struct{}, 1),
+		
 		cfg: deps.Config, 
 	}
 	return r, nil
