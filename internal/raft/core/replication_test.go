@@ -136,7 +136,8 @@ func TestRaftCluster_AppendEntriesReplacesFollowerConflict(tt *testing.T) {
 
 	follower := c.n2
 
-	require.NoError(tt, follower.log.Append(
+	ctx := context.Background()
+	require.NoError(tt, follower.log.Append(ctx,
 		LogEntry{
 			LogID:   LogID{Index: 1, Term: 1},
 			Command: []byte("old"),
@@ -196,7 +197,7 @@ func TestReplication_LeaderBacktracksWhenFollowerIsBehind(tt *testing.T) {
 	leader, follower := c.n1, c.n2
 	c.transport.unregister("n3")
 
-	require.NoError(tt, leader.log.Append(
+	require.NoError(tt, leader.log.Append(ctx,
 		LogEntry{LogID: LogID{Index: 1, Term: 1}, Command: []byte("one")},
 		LogEntry{LogID: LogID{Index: 2, Term: 1}, Command: []byte("two")},
 	))
@@ -224,12 +225,12 @@ func TestReplication_LeaderBacktracksAndReplacesFollowerConflict(tt *testing.T) 
 	leader, follower := c.n1, c.n2
 	c.transport.unregister("n3")
 
-	require.NoError(tt, leader.log.Append(
+	require.NoError(tt, leader.log.Append(ctx,
 		LogEntry{LogID: LogID{Index: 1, Term: 1}, Command: []byte("one")},
 		LogEntry{LogID: LogID{Index: 2, Term: 1}, Command: []byte("two")},
 	))
 
-	require.NoError(tt, follower.log.Append(
+	require.NoError(tt, follower.log.Append(ctx,
 		LogEntry{LogID: LogID{Index: 1, Term: 1}, Command: []byte("one")},
 		LogEntry{LogID: LogID{Index: 2, Term: 2}, Command: []byte("bad")},
 	))

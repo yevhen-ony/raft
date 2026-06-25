@@ -6,7 +6,7 @@ import (
 )
 
 func (r *Raft) propose(ctx context.Context, cmd []byte) (Index, error) {
-	term, rng, err := r.appendToLog(cmd)
+	term, rng, err := r.appendToLog(ctx, cmd)
 	if err != nil {
 		return 0, fmt.Errorf("append to log: %w", err)
 	}
@@ -39,7 +39,7 @@ func (r *Raft) ProposeAndWait(ctx context.Context, cmd []byte) error {
 	return r.waitApplied(ctx, idx)
 }
 
-func (r *Raft) appendToLog(commands ...[]byte) (Term, LogRange, error) {
+func (r *Raft) appendToLog(ctx context.Context, commands ...[]byte) (Term, LogRange, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -51,7 +51,7 @@ func (r *Raft) appendToLog(commands ...[]byte) (Term, LogRange, error) {
 	prev := r.log.LastLogID()
 
 	entries := r.makeEntries(prev.Index+1, commands...)
-	if err := r.log.Append(entries...); err != nil {
+	if err := r.log.Append(ctx, entries...); err != nil {
 		return term, LogRange{}, err
 	}
 

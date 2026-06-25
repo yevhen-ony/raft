@@ -97,13 +97,14 @@ func TestRun_ContinuesAsFollowerAfterHigherTermHeartbeatResponse(tt *testing.T) 
 }
 
 func TestRun_StopsWhenApplierFails(tt *testing.T) {
+	ctx := context.Background()
 	c := setupCluster(tt)
 	c.n1.cfg.HeartbeatInterval = time.Millisecond
 
 	applyErr := errors.New("apply failed")
 	c.n1Applier.Fail(applyErr)
 
-	require.NoError(tt, c.n1.log.Append(
+	require.NoError(tt, c.n1.log.Append(ctx,
 		LogEntry{LogID: LogID{Index: 1, Term: 1}, Command: []byte("one")},
 	))
 

@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"sync"
 	"testing"
 
@@ -63,12 +64,19 @@ func (f *clusterFixture) newRaft(
 ) *Raft {
 	tt.Helper()
 
+	codec := JSONLogCodec{}
+	logPath := filepath.Join(tt.TempDir(), string(self.ID)+".log") 
+	store := NewFileLogStore(logPath, codec)
+	log, err := NewLog(context.Background(), store)
+	require.NoError(tt, err)
+
 	r, err := NewRaft(RaftDeps{
 		Config: &Config{
 			Self:   self,
 			Peers:  peers,
 			Leader: leader,
 		},
+		Log:            log,
 		LogTransport:   f.transport,
 		VoteTransport:  f.transport,
 		CommandApplier: applier,

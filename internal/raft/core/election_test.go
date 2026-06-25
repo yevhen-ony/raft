@@ -108,9 +108,10 @@ func TestVote_RejectsWhenAlreadyVotedForOtherCandidate(tt *testing.T) {
 }
 
 func TestVote_RejectsCandidateWithStaleLog(tt *testing.T) {
+	ctx := context.Background()
 	c := setupCluster(tt)
 
-	require.NoError(tt, c.n2.log.Append(
+	require.NoError(tt, c.n2.log.Append(ctx,
 		LogEntry{LogID: LogID{Index: 1, Term: 1}, Command: []byte("one")},
 	))
 
@@ -128,9 +129,10 @@ func TestVote_RejectsCandidateWithStaleLog(tt *testing.T) {
 }
 
 func TestVote_GrantsCandidateWithUpToDateLog(tt *testing.T) {
+	ctx := context.Background()
 	c := setupCluster(tt)
 
-	require.NoError(tt, c.n2.log.Append(
+	require.NoError(tt, c.n2.log.Append(ctx,
 		LogEntry{LogID: LogID{Index: 1, Term: 1}, Command: []byte("one")},
 	))
 
@@ -148,9 +150,10 @@ func TestVote_GrantsCandidateWithUpToDateLog(tt *testing.T) {
 }
 
 func TestVote_GrantsCandidateWithNewerLogTerm(tt *testing.T) {
+	ctx := context.Background()
 	c := setupCluster(tt)
 
-	require.NoError(tt, c.n2.log.Append(
+	require.NoError(tt, c.n2.log.Append(ctx,
 		LogEntry{LogID: LogID{Index: 1, Term: 1}, Command: []byte("one")},
 		LogEntry{LogID: LogID{Index: 2, Term: 1}, Command: []byte("two")},
 	))
@@ -167,9 +170,10 @@ func TestVote_GrantsCandidateWithNewerLogTerm(tt *testing.T) {
 }
 
 func TestVote_RejectsCandidateWithSameTermShorterLog(tt *testing.T) {
+	ctx := context.Background()
 	c := setupCluster(tt)
 
-	require.NoError(tt, c.n2.log.Append(
+	require.NoError(tt, c.n2.log.Append(ctx,
 		LogEntry{LogID: LogID{Index: 1, Term: 1}, Command: []byte("one")},
 		LogEntry{LogID: LogID{Index: 2, Term: 1}, Command: []byte("two")},
 	))

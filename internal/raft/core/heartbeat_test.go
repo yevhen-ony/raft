@@ -31,7 +31,7 @@ func TestRaftCluster_HeartbeatCatchesUpBehindFollower(tt *testing.T) {
 	leader, follower := c.n1, c.n2
 	c.transport.unregister("n3")
 
-	require.NoError(tt, leader.log.Append(
+	require.NoError(tt, leader.log.Append(ctx,
 		LogEntry{LogID: LogID{Index: 1, Term: 1}, Command: []byte("one")},
 		LogEntry{LogID: LogID{Index: 2, Term: 1}, Command: []byte("two")},
 	))
@@ -71,6 +71,7 @@ func TestRunHeartbeatLoop_ReturnsAfterRoleChange(tt *testing.T) {
 }
 
 func TestRunHeartbeatLoop_ReplicatesPeriodically(tt *testing.T) {
+	ctx := context.Background()
 	c := setupCluster(tt)
 
 	leader, follower := c.n1, c.n2
@@ -78,7 +79,7 @@ func TestRunHeartbeatLoop_ReplicatesPeriodically(tt *testing.T) {
 
 	leader.cfg.HeartbeatInterval = time.Millisecond
 
-	require.NoError(tt, leader.log.Append(
+	require.NoError(tt, leader.log.Append(ctx,
 		LogEntry{LogID: LogID{Index: 1, Term: 1}, Command: []byte("one")},
 	))
 

@@ -1,6 +1,7 @@
 package core
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"sort"
@@ -8,14 +9,28 @@ import (
 
 var ZeroLogID = LogID{}
 
-type Log struct {
-	entries []LogEntry
+type LogStore interface {
+	Load(context.Context) ([]LogEntry, error)
+	Append(context.Context, ...LogEntry) error
+	AppendAfter(context.Context, LogID, ...LogEntry) error
 }
 
-func NewLog() *Log {
-	return &Log{
-		entries: []LogEntry{{LogID: ZeroLogID}},
+type Log struct {
+	entries []LogEntry
+	store   LogStore
+}
+
+func NewLog(ctx context.Context, store LogStore) (*Log, error) {
+	entries, err := store.Load(ctx)
+	if err != nil {
+		return nil, err
 	}
+
+	l := &Log{
+		entries: entries,
+		store: store,
+	}
+	return l, nil
 }
 
 func (l *Log) LastLogID() LogID {
@@ -43,9 +58,13 @@ func (l *Log) PrevIndex(index Index) (Index, error) {
 	return prev.Index, nil
 }
 
-func (l *Log) Append(entries ...LogEntry) error {
+func (l *Log) Append(ctx context.Context, entries ...LogEntry) error {
 	last := l.LastLogID()
 	if err := l.validate(last, entries...); err != nil {
+		return err
+	}
+
+	if err := l.store.Append(ctx, entries...); err != nil {
 		return err
 	}
 

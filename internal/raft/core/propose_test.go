@@ -31,29 +31,32 @@ func TestProposeAndWait_ReturnsAfterCommandApplied(tt *testing.T) {
 	require.ErrorIs(tt, <-done, context.Canceled)
 }
 
-func TestProposeAndWait_ReturnsDeadlineExceededWhenCommandNotApplied(tt *testing.T) {
-	c := setupCluster(tt)
-	leader := c.n1
-	c.transport.unregister(c.node3.ID)
 
-	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
-	defer cancel()
+func TestWaitApplied_ReturnsDeadlineExceededWhenCommandNotApplied(tt *testing.T) {
+  	c := setupCluster(tt)
+  	leader := c.n1
+  	c.transport.unregister(c.node3.ID)
 
-	// apply loop is not running
-	err := leader.ProposeAndWait(ctx, []byte("hello"))
+  	require.NoError(tt, leader.Propose(context.Background(), []byte("hello")))
 
-	require.ErrorIs(tt, err, context.DeadlineExceeded)
-	require.Equal(tt, Index(1), leader.state.CommitIndex)
-	require.Equal(tt, Index(0), leader.state.LastApplied)
-	require.Empty(tt, c.n1Applier.Commands())
+  	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
+  	defer cancel()
+
+  	err := leader.waitApplied(ctx, 1)
+
+  	require.ErrorIs(tt, err, context.DeadlineExceeded)
+  	require.Equal(tt, Index(1), leader.state.CommitIndex)
+  	require.Equal(tt, Index(0), leader.state.LastApplied)
+  	require.Empty(tt, c.n1Applier.Commands())
 }
 
 
 func TestWaitApplied_WakesMultipleWaiters(tt *testing.T) {
+	ctx := context.Background()
   	c := setupCluster(tt)
   	leader := c.n1
 
-  	require.NoError(tt, leader.log.Append(
+  	require.NoError(tt, leader.log.Append(ctx,
   		LogEntry{LogID: LogID{Index: 1, Term: 1}, Command: []byte("one")},
   		LogEntry{LogID: LogID{Index: 2, Term: 1}, Command: []byte("two")},
   	))

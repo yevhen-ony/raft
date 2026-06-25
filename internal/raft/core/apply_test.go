@@ -9,10 +9,11 @@ import (
 )
 
 func TestRunApplierLoop_AppliesCommittedEntriesInOrder(tt *testing.T) {
+	ctx := context.Background()
 	c := setupCluster(tt)
 	leader := c.n1
 
-	require.NoError(tt, leader.log.Append(
+	require.NoError(tt, leader.log.Append(ctx,
 		LogEntry{LogID: LogID{Index: 1, Term: 1}, Command: []byte("one")},
 		LogEntry{LogID: LogID{Index: 2, Term: 1}, Command: []byte("two")},
 	))
@@ -28,13 +29,14 @@ func TestRunApplierLoop_AppliesCommittedEntriesInOrder(tt *testing.T) {
 }
 
 func TestRunApplierLoop_ReturnsApplyError(tt *testing.T) {
+	ctx := context.Background()
 	c := setupCluster(tt)
 	leader := c.n1
 
 	applyErr := errors.New("apply failed")
 	c.n1Applier.Fail(applyErr)
 
-	require.NoError(tt, leader.log.Append(
+	require.NoError(tt, leader.log.Append(ctx,
 		LogEntry{LogID: LogID{Index: 1, Term: 1}, Command: []byte("one")},
 	))
 
