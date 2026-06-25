@@ -19,6 +19,16 @@ type LogID struct {
 	Term  Term
 }
 
+type LogRange struct {
+	Prev Index
+	Last Index
+}
+
+type LogSegment struct {
+	Prev LogID
+	Entries []LogEntry
+}
+
 type LogEntry struct {
 	LogID
 	Command []byte

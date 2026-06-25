@@ -2,6 +2,7 @@ package core
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 )
 
@@ -22,16 +23,24 @@ func (l *Log) LastLogID() LogID {
 	return l.entries[last].LogID
 }
 
-func (l *Log) PrevLogID(target LogID) (LogID, error) {
-	pos, err := l.searchAndMatch(target)
+func (l *Log) PrevLogID(index Index) (LogID, error) {
+	pos, err := l.searchExact(index)
 	if err != nil {
 		return LogID{}, err
 	}
 	if pos == 0 {
 		return LogID{}, ErrNoPrevLog
 	}
-	prev := l.entries[pos-1]	
+	prev := l.entries[pos-1]
 	return prev.LogID, nil
+}
+
+func (l *Log) PrevIndex(index Index) (Index, error) {
+	prev, err := l.PrevLogID(index)
+	if err != nil {
+		return 0, err
+	}
+	return prev.Index, nil
 }
 
 func (l *Log) Append(entries ...LogEntry) error {
@@ -53,6 +62,31 @@ func (l *Log) EntriesAfter(target LogID) ([]LogEntry, error) {
 	return entries, nil
 }
 
+func (l *Log) Segment(rng LogRange) (LogSegment, error) {
+	if rng.Last < rng.Prev {
+		return LogSegment{}, ErrInvalidLogRange
+	}
+
+	prev, err := l.searchExact(rng.Prev)
+	if err != nil {
+		return LogSegment{}, fmt.Errorf("find prev: %w", err)
+	}
+
+	seg := LogSegment{Prev: l.entries[prev].LogID}
+
+	if rng.Last == rng.Prev {
+		return seg, nil
+	}
+
+	last, err := l.searchExact(rng.Last)
+	if err != nil {
+		return LogSegment{}, fmt.Errorf("find last: %w", err)
+	}
+
+	seg.Entries = append([]LogEntry(nil), l.entries[prev+1:last+1]...)
+	return seg, nil
+}
+
 func (l *Log) AppendAfter(prev LogID, entries ...LogEntry) error {
 	pos, err := l.searchAndMatch(prev)
 	if err != nil {
@@ -69,7 +103,7 @@ func (l *Log) Contains(target LogID) bool {
 	if _, err := l.searchAndMatch(target); err != nil {
 		return false
 	}
-	return true 
+	return true
 }
 
 func (l *Log) validate(prev LogID, entries ...LogEntry) error {
@@ -97,7 +131,7 @@ func (l *Log) search(index Index) (int, error) {
 
 func (l *Log) match(i int, target LogID) error {
 	if l.entries[i].LogID != target {
-		return ErrLogMismatch 
+		return ErrLogMismatch
 	}
 	return nil
 }
@@ -105,7 +139,7 @@ func (l *Log) match(i int, target LogID) error {
 func (l *Log) searchAndMatch(target LogID) (int, error) {
 	pos, err := l.search(target.Index)
 	if err != nil {
-		return 0, err 
+		return 0, err
 	}
 	if err := l.match(pos, target); err != nil {
 		return 0, err
@@ -113,17 +147,27 @@ func (l *Log) searchAndMatch(target LogID) (int, error) {
 	return pos, nil
 }
 
-
-func (l *Log) IsUpToDate(target LogID) bool {
-  	last := l.LastLogID()
-  	if target.Term != last.Term {
-  		return target.Term > last.Term
-  	}
-  	return target.Index >= last.Index
+func (l *Log) searchExact(index Index) (int, error) {
+	pos, err := l.search(index)
+	if err != nil {
+		return 0, err
+	}
+	if l.entries[pos].Index != index {
+		return 0, ErrLogNotFound
+	}
+	return pos, nil
 }
 
-func (l *Log) GetEntry(index Index) (LogEntry, error) {
-	pos, err := l.search(index) 
+func (l *Log) IsUpToDate(target LogID) bool {
+	last := l.LastLogID()
+	if target.Term != last.Term {
+		return target.Term > last.Term
+	}
+	return target.Index >= last.Index
+}
+
+func (l *Log) Entry(index Index) (LogEntry, error) {
+	pos, err := l.searchExact(index)
 	if err != nil {
 		return LogEntry{}, err
 	}

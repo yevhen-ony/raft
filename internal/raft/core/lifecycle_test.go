@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
@@ -93,4 +94,28 @@ func TestRun_ContinuesAsFollowerAfterHigherTermHeartbeatResponse(tt *testing.T) 
 	cancel()
 
 	require.ErrorIs(tt, <-done, context.Canceled)
+}
+
+func TestRun_StopsWhenApplierFails(tt *testing.T) {
+	c := setupCluster(tt)
+	c.n1.cfg.HeartbeatInterval = time.Millisecond
+
+	applyErr := errors.New("apply failed")
+	c.n1Applier.Fail(applyErr)
+
+	require.NoError(tt, c.n1.log.Append(
+		LogEntry{LogID: LogID{Index: 1, Term: 1}, Command: []byte("one")},
+	))
+
+	c.n1.mu.Lock()
+	c.n1.updateCommitIndex(1)
+	c.n1.mu.Unlock()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+
+	err := c.n1.Run(ctx)
+
+	require.ErrorIs(tt, err, applyErr)
+	require.Equal(tt, Index(0), c.n1.state.LastApplied)
 }

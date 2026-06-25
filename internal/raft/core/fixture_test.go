@@ -19,6 +19,10 @@ type clusterFixture struct {
 	node1 Node
 	node2 Node
 	node3 Node
+
+	n1Applier *recordingCommandApplier
+	n2Applier *recordingCommandApplier
+	n3Applier *recordingCommandApplier
 }
 
 func setupCluster(tt *testing.T) *clusterFixture {
@@ -31,9 +35,13 @@ func setupCluster(tt *testing.T) *clusterFixture {
 		node3:     Node{ID: "n3"},
 	}
 
-	f.n1 = f.newRaft(tt, f.node1, []Node{f.node2, f.node3}, true)
-	f.n2 = f.newRaft(tt, f.node2, []Node{f.node1, f.node3}, false)
-	f.n3 = f.newRaft(tt, f.node3, []Node{f.node1, f.node2}, false)
+	f.n1Applier = newRecordingCommandApplier()
+	f.n2Applier = newRecordingCommandApplier()
+	f.n3Applier = newRecordingCommandApplier()
+
+	f.n1 = f.newRaft(tt, f.node1, []Node{f.node2, f.node3}, f.n1Applier, true)
+	f.n2 = f.newRaft(tt, f.node2, []Node{f.node1, f.node3}, f.n2Applier, false)
+	f.n3 = f.newRaft(tt, f.node3, []Node{f.node1, f.node2}, f.n3Applier, false)
 
 	f.transport.register(f.node1.ID, f.n1)
 	f.transport.register(f.node2.ID, f.n2)
@@ -50,6 +58,7 @@ func (f *clusterFixture) newRaft(
 	tt *testing.T,
 	self Node,
 	peers []Node,
+	applier CommandApplier,
 	leader bool,
 ) *Raft {
 	tt.Helper()
@@ -60,8 +69,9 @@ func (f *clusterFixture) newRaft(
 			Peers:  peers,
 			Leader: leader,
 		},
-		LogTransport:  f.transport,
-		VoteTransport: f.transport,
+		LogTransport:   f.transport,
+		VoteTransport:  f.transport,
+		CommandApplier: applier,
 	})
 	require.NoError(tt, err)
 
@@ -69,16 +79,16 @@ func (f *clusterFixture) newRaft(
 }
 
 type localTransport struct {
-	mu       sync.RWMutex
-	nodes    map[NodeID]*Raft
-	failures map[NodeID]error
+	mu        sync.RWMutex
+	nodes     map[NodeID]*Raft
+	failures  map[NodeID]error
 	highterms map[NodeID]Term
 }
 
 func newLocalTransport() *localTransport {
 	return &localTransport{
-		nodes:    make(map[NodeID]*Raft),
-		failures: make(map[NodeID]error),
+		nodes:     make(map[NodeID]*Raft),
+		failures:  make(map[NodeID]error),
 		highterms: make(map[NodeID]Term),
 	}
 }
@@ -108,7 +118,7 @@ func (t *localTransport) highTerm(id NodeID, term Term) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 
-	t.highterms[id] = term 
+	t.highterms[id] = term
 }
 
 func (t *localTransport) AppendEntries(
@@ -181,4 +191,39 @@ func requireEntries(tt *testing.T, node *Raft, expected ...string) {
 		require.Equal(tt, Index(i+1), entries[i].Index)
 		require.Equal(tt, command, string(entries[i].Command))
 	}
+}
+
+type recordingCommandApplier struct {
+	mu       sync.Mutex
+	commands []string
+	err      error
+}
+
+func newRecordingCommandApplier() *recordingCommandApplier {
+	return &recordingCommandApplier{}
+}
+
+func (a *recordingCommandApplier) Apply(_ context.Context, command []byte) error {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	if a.err != nil {
+		return a.err
+	}
+	a.commands = append(a.commands, string(command))
+	return nil
+}
+
+func (a *recordingCommandApplier) Commands() []string {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	return append([]string(nil), a.commands...)
+}
+
+func (a *recordingCommandApplier) Fail(err error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+
+	a.err = err
 }

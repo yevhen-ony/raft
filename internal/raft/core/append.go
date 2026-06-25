@@ -27,6 +27,6 @@ func (r *Raft) AppendEntries(
 			return AppendEntriesResponse{Term: r.state.Term, Success: false}
 		}
 	}
-	r.followCommit(req.CommitIndex)
+	r.updateCommitIndex(req.CommitIndex)
 	return AppendEntriesResponse{Term: r.state.Term, Success: true}
 }

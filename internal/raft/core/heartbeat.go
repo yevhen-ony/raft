@@ -39,5 +39,9 @@ func (r *Raft) Heartbeat(ctx context.Context) error {
 		return ErrNotLeader
 	}
 
-	return r.replicateLogTail(ctx, prev)
+	rng := LogRange{
+		Prev: prev.Index,
+		Last: prev.Index,
+	}
+	return r.replicateLogRange(ctx, rng)
 }

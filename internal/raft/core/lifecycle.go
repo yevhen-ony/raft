@@ -2,14 +2,33 @@ package core
 
 import (
 	"context"
+	"errors"
 	"log/slog"
+
+	"golang.org/x/sync/errgroup"
 )
 
 func (r *Raft) Run(ctx context.Context) error {
+	eg, ctx := errgroup.WithContext(ctx)
+
+	eg.Go(func() error { return r.RunApplierLoop(ctx) })
+	eg.Go(func() error { return r.RunLifecycleLoop(ctx) })
+
+	if err := eg.Wait(); err != nil {
+		if !errors.Is(err, context.Canceled) {
+			slog.ErrorContext(ctx, "raft node stopped", "error", err)
+		}
+		return err
+	}
+	return nil
+}
+
+func (r *Raft) RunLifecycleLoop(ctx context.Context) error {
 	for {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
+
 		default:
 		}
 
@@ -37,20 +56,18 @@ func (r *Raft) Run(ctx context.Context) error {
 	}
 }
 
-func (r *Raft) notifyRoleChanged() {
-	select {
-	case r.roleChanged <- struct{}{}:
-	default:
-	}
-}
-
 // the caller must hold the lock
 func (r *Raft) changeRole(role Role) bool {
 	if r.state.Role == role {
 		return false
 	}
 	r.state.Role = role
-	r.notifyRoleChanged()
+
+	select {
+	case r.roleChanged <- struct{}{}:
+	default:
+	}
+
 	return true
 }
 

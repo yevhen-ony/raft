@@ -3,23 +3,16 @@ package core
 import (
 	"context"
 	"fmt"
-	"log/slog"
 )
 
 // caller must hold mu
-func (r *Raft) followCommit(ci Index) {
-	newCommitIndex := min(ci, r.log.LastLogID().Index)
-	if newCommitIndex < r.state.CommitIndex {
-		return
-	}
-	r.updateCommitIndex(newCommitIndex)
-}
-
 func (r *Raft) updateCommitIndex(index Index) {
-	r.state.CommitIndex = index
-	if r.state.CommitIndex <= r.state.LastApplied {
+	index = min(index, r.log.LastLogID().Index)
+	if index <= r.state.CommitIndex {
 		return
 	}
+	
+	r.state.CommitIndex = index
 
 	select {
 	case r.commitChanged <- struct{}{}:
@@ -30,7 +23,7 @@ func (r *Raft) updateCommitIndex(index Index) {
 func (r *Raft) RunApplierLoop(ctx context.Context) error {
 	for {
 		if err := r.applyNextCommands(ctx); err != nil {
-			slog.ErrorContext(ctx, "apply command failed", "error", err)
+			return err
 		}
 
 		select {
@@ -49,13 +42,12 @@ func (r *Raft) applyNextCommands(ctx context.Context) error {
 
 	for ; nextIndex <= commitIndex; nextIndex++ {
 		r.mu.RLock()
-		entry, err := r.log.GetEntry(nextIndex)
+		entry, err := r.log.Entry(nextIndex)
 		r.mu.RUnlock()
 
 		if err != nil {
 			return fmt.Errorf("get entry at index %d: %w", nextIndex, err)
 		}
-
 		if err := r.commandApplier.Apply(ctx, entry.Command); err != nil {
 			return fmt.Errorf("apply command at index %d: %w", nextIndex, err)
 		}

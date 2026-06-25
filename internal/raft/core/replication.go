@@ -6,7 +6,7 @@ import (
 	"log/slog"
 )
 
-func (r *Raft) replicateLogTail(ctx context.Context, prev LogID) error {
+func (r *Raft) replicateLogRange(ctx context.Context, rng LogRange) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
@@ -17,7 +17,7 @@ func (r *Raft) replicateLogTail(ctx context.Context, prev LogID) error {
 
 	replRes := make(chan ReplicationResult, len(peers))
 	for _, peer := range peers {
-		go r.replicateLogTailTo(ctx, peer, prev, replRes)
+		go r.replicateLogRangeTo(ctx, peer, rng, replRes)
 	}
 
 	accepted, rejected := 1, 0
@@ -76,10 +76,10 @@ type ReplicationResult struct {
 }
 
 // send replication request to a peer
-func (r *Raft) replicateLogTailTo(
+func (r *Raft) replicateLogRangeTo(
 	ctx context.Context,
 	peer Node,
-	prev LogID,
+	rng LogRange,
 	results chan<- ReplicationResult,
 ) {
 	for {
@@ -87,7 +87,7 @@ func (r *Raft) replicateLogTailTo(
 			results <- ReplicationResult{Peer: peer, Outcome: ReplicateFailed, Error: err}
 			return
 		}
-		req, err := r.makeAppendEntriesRequest(prev)
+		req, err := r.makeAppendEntriesRequest(rng)
 		if err != nil {
 			results <- ReplicationResult{Peer: peer, Outcome: ReplicateFailed, Error: err}
 			return
@@ -108,21 +108,24 @@ func (r *Raft) replicateLogTailTo(
 		// on reject
 
 		r.mu.RLock()
-		prev, err = r.log.PrevLogID(prev)
+		prev, err := r.log.PrevIndex(rng.Prev)
 		r.mu.RUnlock()
+
 		if err != nil {
 			err = fmt.Errorf("access previous log: %w", err)
 			results <- ReplicationResult{Peer: peer, Outcome: ReplicateFailed, Error: err}
 			return
 		}
+
+		rng.Prev = prev
 	}
 }
 
-func (r *Raft) makeAppendEntriesRequest(prev LogID) (AppendEntriesRequest, error) {
+func (r *Raft) makeAppendEntriesRequest(rng LogRange) (AppendEntriesRequest, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 
-	entries, err := r.log.EntriesAfter(prev)
+	seg, err := r.log.Segment(rng)
 	if err != nil {
 		return AppendEntriesRequest{}, err
 	}
@@ -130,8 +133,8 @@ func (r *Raft) makeAppendEntriesRequest(prev LogID) (AppendEntriesRequest, error
 	req := AppendEntriesRequest{
 		LeaderID:    r.cluster.Self.ID,
 		Term:        r.state.Term,
-		PrevLogID:   prev,
-		Entries:     entries,
+		PrevLogID:   seg.Prev,
+		Entries:     seg.Entries,
 		CommitIndex: r.state.CommitIndex,
 	}
 	return req, nil

@@ -14,4 +14,5 @@ var (
 	ErrNoPrevLog        = errors.New("first log reached")
 	ErrQuorumNotReached = errors.New("quorum not reached")
 	ErrElectionLost     = errors.New("election lost")
+	ErrInvalidLogRange  = errors.New("invalid log range")
 )
