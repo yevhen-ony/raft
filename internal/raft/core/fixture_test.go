@@ -64,22 +64,31 @@ func (f *clusterFixture) newRaft(
 ) *Raft {
 	tt.Helper()
 
+	ctx := context.Background()
+
+	cfg := &Config{
+		Self:   self,
+		Peers:  peers,
+		Leader: leader,
+	}
+
 	codec := JSONLogCodec{}
-	logPath := filepath.Join(tt.TempDir(), string(self.ID)+".log") 
-	store := NewFileLogStore(logPath, codec)
-	log, err := NewLog(context.Background(), store)
+	logPath := filepath.Join(tt.TempDir(), string(self.ID)+".log")
+	logStore := NewFileLogStore(logPath, codec)
+	log, err := NewLog(ctx, logStore)
+	require.NoError(tt, err)
+
+	stateStore := NewInMemStateStore()
+	state, err := NewState(ctx, stateStore, cfg)
 	require.NoError(tt, err)
 
 	r, err := NewRaft(RaftDeps{
-		Config: &Config{
-			Self:   self,
-			Peers:  peers,
-			Leader: leader,
-		},
 		Log:            log,
+		State:          state,
 		LogTransport:   f.transport,
 		VoteTransport:  f.transport,
 		CommandApplier: applier,
+		Config:         cfg,
 	})
 	require.NoError(tt, err)
 

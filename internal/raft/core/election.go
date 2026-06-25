@@ -13,7 +13,7 @@ type election struct {
 	quorum Quorum
 }
 
-func (r *Raft) startElection() (election, error) {
+func (r *Raft) startElection(ctx context.Context) (election, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -22,7 +22,7 @@ func (r *Raft) startElection() (election, error) {
 		return election{}, ErrLeader
 	}
 
-	if err := r.becomeCandidate(); err != nil {
+	if err := r.becomeCandidate(ctx); err != nil {
 		return election{}, fmt.Errorf("become candidate: %w", err)
 	}
 
@@ -44,7 +44,7 @@ func (r *Raft) RunElection(ctx context.Context) (bool, error) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	e, err := r.startElection()
+	e, err := r.startElection(ctx)
 	if err != nil {
 		return false, err
 	}
@@ -86,15 +86,15 @@ LOOP:
 	defer r.mu.Unlock()
 
 	if term > e.req.Term {
-		r.becomeFollower(term)
-		return false, nil
+		err := r.becomeFollower(ctx, term)
+		return false, err
 	}
 	if granted < e.quorum.Accept {
-		r.becomeFollower(e.req.Term)
-		return false, nil
+		err = r.becomeFollower(ctx, e.req.Term)
+		return false, err
 	}
 	if err := r.becomeLeader(e.req.Term); err != nil {
-		r.becomeFollower(e.req.Term)
+		err = r.becomeFollower(ctx, e.req.Term)
 		return false, err
 	}
 	return true, nil
@@ -142,7 +142,7 @@ func (r *Raft) requestVote(
 	results <- VoteResult{Peer: peer, Outcome: VoteDenied, Term: rsp.Term}
 }
 
-func (r *Raft) Vote(_ context.Context, req VoteRequest) VoteResponse {
+func (r *Raft) Vote(ctx context.Context, req VoteRequest) VoteResponse {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
@@ -151,7 +151,9 @@ func (r *Raft) Vote(_ context.Context, req VoteRequest) VoteResponse {
 	}
 
 	if r.state.Term < req.Term {
-		r.becomeFollower(req.Term)
+		if err := r.becomeFollower(ctx, req.Term); err != nil {
+			return VoteResponse{Term: r.state.Term, Granted: false}
+		}
 	}
 
 	if r.state.VotedFor != "" && r.state.VotedFor != req.CandidateID {
@@ -162,7 +164,9 @@ func (r *Raft) Vote(_ context.Context, req VoteRequest) VoteResponse {
 		return VoteResponse{Term: r.state.Term, Granted: false}
 	}
 
-	r.state.VotedFor = req.CandidateID
+	if err := r.state.SetVotedFor(ctx, req.CandidateID); err != nil {
+		return VoteResponse{Term: r.state.Term, Granted: false}
+	}
 	return VoteResponse{Term: r.state.Term, Granted: true}
 }
 
@@ -181,12 +185,14 @@ func (r *Raft) nextElectionTimeout() time.Duration {
 	return minDur + delta*time.Duration(steps[i])/10
 }
 
-func (r *Raft) observeLeader(term Term) error {
+func (r *Raft) observeLeader(ctx context.Context, term Term) error {
 	if r.state.Term > term {
 		return ErrOutdatedTerm
 	}
 
-	r.becomeFollower(term)
+	if err := r.becomeFollower(ctx, term); err != nil {
+		return fmt.Errorf("become follower: %w", err)
+	}
 
 	select {
 	case r.leaderSeen <- struct{}{}:

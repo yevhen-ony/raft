@@ -28,7 +28,7 @@ func NewLog(ctx context.Context, store LogStore) (*Log, error) {
 
 	l := &Log{
 		entries: entries,
-		store: store,
+		store:   store,
 	}
 	return l, nil
 }
@@ -106,7 +106,7 @@ func (l *Log) Segment(rng LogRange) (LogSegment, error) {
 	return seg, nil
 }
 
-func (l *Log) AppendAfter(prev LogID, entries ...LogEntry) error {
+func (l *Log) AppendAfter(ctx context.Context, prev LogID, entries ...LogEntry) error {
 	pos, err := l.searchAndMatch(prev)
 	if err != nil {
 		return err
@@ -114,6 +114,11 @@ func (l *Log) AppendAfter(prev LogID, entries ...LogEntry) error {
 	if err := l.validate(prev, entries...); err != nil {
 		return err
 	}
+
+	if err := l.store.AppendAfter(ctx, prev, entries...); err != nil {
+		return err
+	}
+
 	l.entries = append(l.entries[:pos+1], entries...)
 	return nil
 }

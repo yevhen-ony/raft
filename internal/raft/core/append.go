@@ -13,7 +13,7 @@ func (r *Raft) AppendEntries(
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if err := r.observeLeader(req.Term); err != nil {
+	if err := r.observeLeader(ctx, req.Term); err != nil {
 		slog.WarnContext(ctx, "observe leader failes", "term", req.Term, "error", err)
 		return AppendEntriesResponse{Term: r.state.Term, Success: false}
 	}
@@ -22,7 +22,7 @@ func (r *Raft) AppendEntries(
 		return AppendEntriesResponse{Term: r.state.Term, Success: false}
 	}
 	if len(req.Entries) > 0 {
-		if err := r.log.AppendAfter(req.PrevLogID, req.Entries...); err != nil {
+		if err := r.log.AppendAfter(ctx, req.PrevLogID, req.Entries...); err != nil {
 			slog.WarnContext(ctx, "failed to append log", "error", err)
 			return AppendEntriesResponse{Term: r.state.Term, Success: false}
 		}

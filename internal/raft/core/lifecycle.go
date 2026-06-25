@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"errors"
+	"fmt"
 	"log/slog"
 
 	"golang.org/x/sync/errgroup"
@@ -71,12 +72,13 @@ func (r *Raft) changeRole(role Role) bool {
 	return true
 }
 
-func (r *Raft) becomeCandidate() error {
+func (r *Raft) becomeCandidate(ctx context.Context) error {
 	if r.state.Role != Follower {
 		return ErrNotFollower
 	}
-	r.state.Term++
-	r.state.VotedFor = r.cluster.Self.ID
+	if err := r.state.IncTerm(ctx, r.cluster.Self.ID); err != nil {
+		return fmt.Errorf("inc term: %w", err)
+	}
 	r.changeRole(Candidate)
 	return nil
 }
@@ -92,11 +94,12 @@ func (r *Raft) becomeLeader(term Term) error {
 	return nil
 }
 
-// become follower is unconditional: never fails
-func (r *Raft) becomeFollower(term Term) {
+func (r *Raft) becomeFollower(ctx context.Context, term Term) error {
 	if term > r.state.Term {
-		r.state.Term = term
-		r.state.VotedFor = ""
+		if err := r.state.SetTerm(ctx, term); err != nil {
+			return fmt.Errorf("set term: %w", err)
+		}
 	}
 	r.changeRole(Follower)
+	return nil
 }

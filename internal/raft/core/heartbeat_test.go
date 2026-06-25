@@ -54,6 +54,7 @@ func TestRaftCluster_FollowerHeartbeatReturnsNotLeader(tt *testing.T) {
 }
 
 func TestRunHeartbeatLoop_ReturnsAfterRoleChange(tt *testing.T) {
+	ctx := context.Background()
 	c := setupCluster(tt)
 	c.n1.cfg.HeartbeatInterval = time.Hour
 
@@ -63,7 +64,7 @@ func TestRunHeartbeatLoop_ReturnsAfterRoleChange(tt *testing.T) {
 	}()
 
 	c.n1.mu.Lock()
-	c.n1.becomeFollower(c.n1.state.Term)
+	c.n1.becomeFollower(ctx, c.n1.state.Term)
 	c.n1.mu.Unlock()
 
 	require.NoError(tt, <-done)

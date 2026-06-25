@@ -69,8 +69,12 @@ LOOP:
 
 			case ReplicateHigherTerm:
 				r.mu.Lock()
-				r.becomeFollower(res.Term)
+				err = r.becomeFollower(ctx, res.Term)
 				r.mu.Unlock()
+
+				if err != nil {
+					return fmt.Errorf("become follower: %w", err)
+				}
 				return ErrNotLeader
 			}
 		}

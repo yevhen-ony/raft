@@ -1,28 +1,52 @@
 package core
 
-type State struct {
-	Term        Term
-	Role        Role
-	VotedFor    NodeID
-	CommitIndex Index
-	LastApplied Index
+import (
+	"context"
+	"fmt"
+)
+
+type StateStore interface {
+	Load(context.Context) (PersistentState, error)
+	Save(context.Context, PersistentState) error
 }
 
-func NewState(config *Config) *State {
-	role := Follower
-	votedFor := NodeID("")
-	if config.Leader {
-		role = Leader
-		votedFor = config.Self.ID
+type PersistentState struct {
+	Term     Term
+	VotedFor NodeID
+}
+
+type State struct {
+	PersistentState
+
+	Role        Role
+	CommitIndex Index
+	LastApplied Index
+
+	store StateStore
+}
+
+func NewState(ctx context.Context, store StateStore, config *Config) (*State, error) {
+	ps, err := store.Load(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("load persistent state: %w", err)
 	}
 
-	return &State{
-		Term:        0,
-		Role:        role,
-		VotedFor:    votedFor,
-		CommitIndex: 0,
-		LastApplied: 0,
+	s := &State{
+		PersistentState: ps,
+		Role:            Follower,
+		CommitIndex:     0,
+		LastApplied:     0,
+
+		store: store,
 	}
+
+	if config.Leader {
+		s.Role = Leader
+		if err := s.SetVotedFor(ctx, config.Self.ID); err != nil {
+			return nil, fmt.Errorf("set voted for: %w", err)
+		}
+	}
+	return s, nil
 }
 
 func (s *State) EnsureLeader() (Term, error) {
@@ -38,6 +62,55 @@ func (s *State) EnsureLeaderTerm(term Term) error {
 	}
 	if s.Term != term {
 		return ErrOutdatedTerm
+	}
+	return nil
+}
+
+func (s *State) save(ctx context.Context) error {
+	return s.store.Save(ctx, s.PersistentState)
+}
+
+func (s *State) SetTerm(ctx context.Context, term Term) error {
+	if term == s.Term {
+		return nil
+	}
+
+	prev := s.PersistentState
+
+	s.Term = term
+	s.VotedFor = ""
+
+	if err := s.save(ctx); err != nil {
+		s.PersistentState = prev
+		return err
+	}
+	return nil
+}
+
+func (s *State) IncTerm(ctx context.Context, votedFor NodeID) error {
+	prev := s.PersistentState
+
+	s.Term++
+	s.VotedFor = votedFor
+
+	if err := s.save(ctx); err != nil {
+		s.PersistentState = prev
+		return err
+	}
+	return nil
+}
+
+func (s *State) SetVotedFor(ctx context.Context, votedFor NodeID) error {
+	if s.VotedFor == votedFor {
+		return nil
+	}
+
+	prev := s.PersistentState
+	s.VotedFor = votedFor
+
+	if err := s.save(ctx); err != nil {
+		s.PersistentState = prev
+		return err
 	}
 	return nil
 }

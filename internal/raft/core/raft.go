@@ -8,6 +8,7 @@ import (
 
 type RaftDeps struct {
 	Log            *Log
+	State          *State
 	LogTransport   LogEntryTransport
 	VoteTransport  VoteTransport
 	CommandApplier CommandApplier
@@ -47,10 +48,13 @@ func NewRaft(deps RaftDeps) (*Raft, error) {
 	if deps.Log == nil {
 		return nil, errors.New("missing Log")
 	}
+	if deps.State == nil {
+		return nil, errors.New("missing state")
+	}
 
 	r := &Raft{
 		cluster: NewCluster(deps.Config),
-		state:   NewState(deps.Config),
+		state:   deps.State,
 		log:     deps.Log,
 
 		commandApplier: deps.CommandApplier,
