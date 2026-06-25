@@ -5,45 +5,61 @@ import (
 	"fmt"
 )
 
-func (r *Raft) Propose(ctx context.Context, cmd []byte) error {
-
-	rng, err := r.appendToLog(cmd)
+func (r *Raft) propose(ctx context.Context, cmd []byte) (Index, error) {
+	term, rng, err := r.appendToLog(cmd)
 	if err != nil {
-		return fmt.Errorf("append to log: %w", err)
+		return 0, fmt.Errorf("append to log: %w", err)
 	}
 
-	if err := r.replicateLogRange(ctx, rng); err != nil {
-		return fmt.Errorf("replicate log tail: %w", err)
+	if err := r.replicateLogRange(ctx, term, rng); err != nil {
+		return 0, fmt.Errorf("replicate log range: %w", err)
 	}
 
-	r.mu.Lock()
-	r.updateCommitIndex(rng.Last)
-	r.mu.Unlock()
-
-	return nil
-}
-
-func (r *Raft) appendToLog(commands ...[]byte) (LogRange, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	role := r.state.Role
-	if role != Leader {
-		return LogRange{}, ErrNotLeader
+	if err := r.state.EnsureLeaderTerm(term); err != nil {
+		return 0, err
+	}
+
+	r.updateCommitIndex(rng.Last)
+	return rng.Last, nil
+}
+
+func (r *Raft) Propose(ctx context.Context, cmd []byte) error {
+	_, err := r.propose(ctx, cmd)
+	return err
+}
+
+func (r *Raft) ProposeAndWait(ctx context.Context, cmd []byte) error {
+	idx, err := r.propose(ctx, cmd)
+	if err != nil {
+		return err
+	}
+	return r.waitApplied(ctx, idx)
+}
+
+func (r *Raft) appendToLog(commands ...[]byte) (Term, LogRange, error) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	term, err := r.state.EnsureLeader()
+	if err != nil {
+		return term, LogRange{}, err
 	}
 
 	prev := r.log.LastLogID()
 
 	entries := r.makeEntries(prev.Index+1, commands...)
 	if err := r.log.Append(entries...); err != nil {
-		return LogRange{}, err
+		return term, LogRange{}, err
 	}
 
 	res := LogRange{
 		Prev: prev.Index,
 		Last: r.log.LastLogID().Index,
 	}
-	return res, nil
+	return term, res, nil
 }
 
 func (r *Raft) makeEntries(index Index, commands ...[]byte) []LogEntry {

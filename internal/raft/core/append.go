@@ -28,5 +28,6 @@ func (r *Raft) AppendEntries(
 		}
 	}
 	r.updateCommitIndex(req.CommitIndex)
+
 	return AppendEntriesResponse{Term: r.state.Term, Success: true}
 }

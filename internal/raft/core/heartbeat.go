@@ -31,17 +31,17 @@ func (r *Raft) RunHeartbeatLoop(ctx context.Context) error {
 
 func (r *Raft) Heartbeat(ctx context.Context) error {
 	r.mu.RLock()
-	role := r.state.Role
+	term, err := r.state.EnsureLeader()
 	prev := r.log.LastLogID()
 	r.mu.RUnlock()
 
-	if role != Leader {
-		return ErrNotLeader
+	if err != nil {
+		return err 
 	}
 
 	rng := LogRange{
 		Prev: prev.Index,
 		Last: prev.Index,
 	}
-	return r.replicateLogRange(ctx, rng)
+	return r.replicateLogRange(ctx, term, rng)
 }

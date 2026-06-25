@@ -6,26 +6,48 @@ import (
 	"log/slog"
 )
 
-func (r *Raft) replicateLogRange(ctx context.Context, rng LogRange) error {
+type replRound struct {
+	Peers  []Node
+	Quorum Quorum
+	Term   Term
+}
+
+func (r *Raft) startReplication(term Term) (*replRound, error) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	if err := r.state.EnsureLeaderTerm(term); err != nil {
+		return nil, err
+	}
+	rr := &replRound{
+		Peers:  append([]Node(nil), r.cluster.Peers...),
+		Quorum: r.cluster.Quorum(),
+		Term:   term,
+	}
+	return rr, nil
+}
+
+// leader only
+func (r *Raft) replicateLogRange(ctx context.Context, term Term, rng LogRange) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 
-	r.mu.RLock()
-	peers := append([]Node(nil), r.cluster.Peers...)
-	quorum := r.cluster.Quorum()
-	r.mu.RUnlock()
+	rr, err := r.startReplication(term)
+	if err != nil {
+		return err
+	}
 
-	replRes := make(chan ReplicationResult, len(peers))
-	for _, peer := range peers {
-		go r.replicateLogRangeTo(ctx, peer, rng, replRes)
+	replRes := make(chan ReplicationResult, len(rr.Peers))
+	for _, peer := range rr.Peers {
+		go r.replicateLogRangeTo(ctx, peer, term, rng, replRes)
 	}
 
 	accepted, rejected := 1, 0
 LOOP:
-	for range len(peers) {
+	for range len(rr.Peers) {
 		select {
 		case <-ctx.Done():
-			if accepted >= quorum.Accept {
+			if accepted >= rr.Quorum.Accept {
 				return nil
 			}
 			return ctx.Err()
@@ -34,14 +56,14 @@ LOOP:
 			switch res.Outcome {
 			case ReplicateAccepted:
 				accepted++
-				if accepted >= quorum.Accept {
+				if accepted >= rr.Quorum.Accept {
 					break LOOP
 				}
 
 			case ReplicateFailed:
 				slog.ErrorContext(ctx, "replication failed", "peer", res.Peer.ID, "error", res.Error)
 				rejected++
-				if rejected >= quorum.Reject {
+				if rejected >= rr.Quorum.Reject {
 					break LOOP
 				}
 
@@ -54,7 +76,7 @@ LOOP:
 		}
 	}
 
-	if accepted < quorum.Accept {
+	if accepted < rr.Quorum.Accept {
 		return ErrQuorumNotReached
 	}
 	return nil
@@ -79,6 +101,7 @@ type ReplicationResult struct {
 func (r *Raft) replicateLogRangeTo(
 	ctx context.Context,
 	peer Node,
+	term Term,
 	rng LogRange,
 	results chan<- ReplicationResult,
 ) {
@@ -87,7 +110,7 @@ func (r *Raft) replicateLogRangeTo(
 			results <- ReplicationResult{Peer: peer, Outcome: ReplicateFailed, Error: err}
 			return
 		}
-		req, err := r.makeAppendEntriesRequest(rng)
+		req, err := r.makeAppendEntriesRequest(term, rng)
 		if err != nil {
 			results <- ReplicationResult{Peer: peer, Outcome: ReplicateFailed, Error: err}
 			return
@@ -121,9 +144,13 @@ func (r *Raft) replicateLogRangeTo(
 	}
 }
 
-func (r *Raft) makeAppendEntriesRequest(rng LogRange) (AppendEntriesRequest, error) {
+func (r *Raft) makeAppendEntriesRequest(term Term, rng LogRange) (AppendEntriesRequest, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
+
+	if err := r.state.EnsureLeaderTerm(term); err != nil {
+		return AppendEntriesRequest{}, err
+	}
 
 	seg, err := r.log.Segment(rng)
 	if err != nil {
@@ -132,7 +159,7 @@ func (r *Raft) makeAppendEntriesRequest(rng LogRange) (AppendEntriesRequest, err
 
 	req := AppendEntriesRequest{
 		LeaderID:    r.cluster.Self.ID,
-		Term:        r.state.Term,
+		Term:        term,
 		PrevLogID:   seg.Prev,
 		Entries:     seg.Entries,
 		CommitIndex: r.state.CommitIndex,

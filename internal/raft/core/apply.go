@@ -7,15 +7,16 @@ import (
 
 // caller must hold mu
 func (r *Raft) updateCommitIndex(index Index) {
+
 	index = min(index, r.log.LastLogID().Index)
 	if index <= r.state.CommitIndex {
 		return
 	}
-	
+
 	r.state.CommitIndex = index
 
 	select {
-	case r.commitChanged <- struct{}{}:
+	case r.logCommitted <- struct{}{}:
 	default:
 	}
 }
@@ -29,7 +30,7 @@ func (r *Raft) RunApplierLoop(ctx context.Context) error {
 		select {
 		case <-ctx.Done():
 			return ctx.Err()
-		case <-r.commitChanged:
+		case <-r.logCommitted:
 		}
 	}
 }
@@ -39,6 +40,8 @@ func (r *Raft) applyNextCommands(ctx context.Context) error {
 	nextIndex := r.state.LastApplied + 1
 	commitIndex := r.state.CommitIndex
 	r.mu.RUnlock()
+
+	applied := false
 
 	for ; nextIndex <= commitIndex; nextIndex++ {
 		r.mu.RLock()
@@ -55,6 +58,31 @@ func (r *Raft) applyNextCommands(ctx context.Context) error {
 		r.mu.Lock()
 		r.state.LastApplied = entry.Index
 		r.mu.Unlock()
+
+		applied = true
+	}
+	if applied {
+		r.commandApplied.Broadcast()
 	}
 	return nil
+}
+
+func (r *Raft) waitApplied(ctx context.Context, index Index) error {
+	for {
+		applied := r.commandApplied.Subscribe()
+
+		r.mu.RLock()
+		done := r.state.LastApplied >= index
+		r.mu.RUnlock()
+
+		if done {
+			return nil
+		}
+
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-applied:
+		}
+	}
 }

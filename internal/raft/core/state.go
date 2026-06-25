@@ -17,10 +17,27 @@ func NewState(config *Config) *State {
 	}
 
 	return &State{
-		Term: 0,
-		Role: role,
-		VotedFor: votedFor,
+		Term:        0,
+		Role:        role,
+		VotedFor:    votedFor,
 		CommitIndex: 0,
 		LastApplied: 0,
 	}
+}
+
+func (s *State) EnsureLeader() (Term, error) {
+	if s.Role != Leader {
+		return 0, ErrNotLeader
+	}
+	return s.Term, nil
+}
+
+func (s *State) EnsureLeaderTerm(term Term) error {
+	if s.Role != Leader {
+		return ErrNotLeader
+	}
+	if s.Term != term {
+		return ErrOutdatedTerm
+	}
+	return nil
 }
