@@ -11,7 +11,7 @@ import (
 func TestRaftCluster_HeartbeatDoesNotAppendOnUpToDateFollower(tt *testing.T) {
 	ctx := context.Background()
 
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 	leader, follower := c.n1, c.n2
 	c.transport.unregister("n3")
 
@@ -27,7 +27,7 @@ func TestRaftCluster_HeartbeatDoesNotAppendOnUpToDateFollower(tt *testing.T) {
 func TestRaftCluster_HeartbeatCatchesUpBehindFollower(tt *testing.T) {
 	ctx := context.Background()
 
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 	leader, follower := c.n1, c.n2
 	c.transport.unregister("n3")
 
@@ -55,7 +55,7 @@ func TestRaftCluster_FollowerHeartbeatReturnsNotLeader(tt *testing.T) {
 
 func TestRunHeartbeatLoop_ReturnsAfterRoleChange(tt *testing.T) {
 	ctx := context.Background()
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 	c.n1.cfg.HeartbeatInterval = time.Hour
 
 	done := make(chan error, 1)
@@ -73,7 +73,7 @@ func TestRunHeartbeatLoop_ReturnsAfterRoleChange(tt *testing.T) {
 
 func TestRunHeartbeatLoop_ReplicatesPeriodically(tt *testing.T) {
 	ctx := context.Background()
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 
 	leader, follower := c.n1, c.n2
 	c.transport.unregister(c.node3.ID)
@@ -103,7 +103,7 @@ func TestRunHeartbeatLoop_ReplicatesPeriodically(tt *testing.T) {
 }
 
 func TestRunHeartbeatLoop_StepsDownOnHigherTermResponse(tt *testing.T) {
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 
 	c.n1.cfg.HeartbeatInterval = time.Millisecond
 	c.transport.highTerm(c.node2.ID, Term(2))

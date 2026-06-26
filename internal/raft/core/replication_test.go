@@ -11,7 +11,7 @@ import (
 func TestReplication_ProposeReplicatesToFollower(tt *testing.T) {
 	ctx := context.Background()
 
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 
 	require.NoError(tt, c.n1.Propose(ctx, []byte("hello")))
 
@@ -26,7 +26,7 @@ func TestReplication_ProposeReplicatesToFollower(tt *testing.T) {
 }
 
 func TestReplication_FollowerRejectsStaleEntry(tt *testing.T) {
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 
 	rsp := c.n2.AppendEntries(context.Background(), AppendEntriesRequest{
 		LeaderID:  "n1",
@@ -110,7 +110,7 @@ func TestReplication_FollowerAppendsEntriesFromHigherTermLeader(tt *testing.T) {
 func TestReplication_ProposeReplicatesSequentialEntries(tt *testing.T) {
 	ctx := context.Background()
 
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 	c.transport.unregister("n3")
 
 	require.NoError(tt, c.n1.Propose(ctx, []byte("one")))
@@ -177,7 +177,7 @@ func TestRaftCluster_AppendEntriesReplacesFollowerConflict(tt *testing.T) {
 }
 
 func TestReplication_LeaderStepsDownOnHigherTermReplicationResponse(tt *testing.T) {
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 
 	c.transport.highTerm("n2", Term(2))
 	c.transport.highTerm("n3", Term(2))
@@ -193,7 +193,7 @@ func TestReplication_LeaderStepsDownOnHigherTermReplicationResponse(tt *testing.
 func TestReplication_LeaderBacktracksWhenFollowerIsBehind(tt *testing.T) {
 	ctx := context.Background()
 
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 	leader, follower := c.n1, c.n2
 	c.transport.unregister("n3")
 
@@ -221,7 +221,7 @@ func TestReplication_LeaderBacktracksWhenFollowerIsBehind(tt *testing.T) {
 func TestReplication_LeaderBacktracksAndReplacesFollowerConflict(tt *testing.T) {
 	ctx := context.Background()
 
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 	leader, follower := c.n1, c.n2
 	c.transport.unregister("n3")
 
@@ -257,7 +257,7 @@ func TestReplication_LeaderBacktracksAndReplacesFollowerConflict(tt *testing.T) 
 func TestReplication_ProposeSucceedsWithQuorum(tt *testing.T) {
 	ctx := context.Background()
 
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 	c.transport.unregister("n3")
 	leader, follower := c.n1, c.n2
 
@@ -272,7 +272,7 @@ func TestReplication_ProposeSucceedsWithQuorum(tt *testing.T) {
 func TestReplication_ProposeFailsWithoutQuorum(tt *testing.T) {
 	ctx := context.Background()
 
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 	c.transport.unregister("n2")               // unreachable
 	c.transport.fail("n3", errors.New("boom")) // failed
 
@@ -284,7 +284,7 @@ func TestReplication_ProposeFailsWithoutQuorum(tt *testing.T) {
 func TestReplication_ProposeAdvancesLeaderCommitIndex(tt *testing.T) {
 	ctx := context.Background()
 
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 	leader := c.n1
 
 	require.NoError(tt, leader.Propose(ctx, []byte("hello")))
@@ -295,7 +295,7 @@ func TestReplication_ProposeAdvancesLeaderCommitIndex(tt *testing.T) {
 func TestReplication_ProposeDoesNotCommitWithoutQuorum(tt *testing.T) {
 	ctx := context.Background()
 
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 	c.transport.unregister("n2")
 	c.transport.fail("n3", errors.New("boom"))
 

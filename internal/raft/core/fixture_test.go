@@ -40,17 +40,13 @@ func setupCluster(tt *testing.T) *clusterFixture {
 	f.n2Applier = newRecordingCommandApplier()
 	f.n3Applier = newRecordingCommandApplier()
 
-	f.n1 = f.newRaft(tt, f.node1, []Node{f.node2, f.node3}, f.n1Applier, true)
-	f.n2 = f.newRaft(tt, f.node2, []Node{f.node1, f.node3}, f.n2Applier, false)
-	f.n3 = f.newRaft(tt, f.node3, []Node{f.node1, f.node2}, f.n3Applier, false)
+	f.n1 = f.newRaft(tt, f.node1, []Node{f.node2, f.node3}, f.n1Applier)
+	f.n2 = f.newRaft(tt, f.node2, []Node{f.node1, f.node3}, f.n2Applier)
+	f.n3 = f.newRaft(tt, f.node3, []Node{f.node1, f.node2}, f.n3Applier)
 
 	f.transport.register(f.node1.ID, f.n1)
 	f.transport.register(f.node2.ID, f.n2)
 	f.transport.register(f.node3.ID, f.n3)
-
-	f.n1.state.Term = 1
-	f.n2.state.Term = 1
-	f.n3.state.Term = 1
 
 	return f
 }
@@ -60,16 +56,14 @@ func (f *clusterFixture) newRaft(
 	self Node,
 	peers []Node,
 	applier CommandApplier,
-	leader bool,
 ) *Raft {
 	tt.Helper()
 
 	ctx := context.Background()
 
 	cfg := &Config{
-		Self:   self,
-		Peers:  peers,
-		Leader: leader,
+		Self:  self,
+		Peers: peers,
 	}
 
 	codec := JSONLogCodec{}
@@ -93,6 +87,21 @@ func (f *clusterFixture) newRaft(
 	require.NoError(tt, err)
 
 	return r
+}
+
+func (f *clusterFixture) WithLeader(tt *testing.T, term Term) *clusterFixture {
+	tt.Helper()
+	ctx := context.Background()
+
+	for _, node := range []*Raft{f.n1, f.n2, f.n3} {
+		node.state.Role = Follower
+		require.NoError(tt, node.state.SetTerm(ctx, term))
+		require.NoError(tt, node.state.SetVotedFor(ctx, ""))
+	}
+
+	require.NoError(tt, f.n1.state.SetVotedFor(ctx, f.n1.cluster.Self.ID))
+	f.n1.state.Role = Leader
+	return f
 }
 
 type localTransport struct {

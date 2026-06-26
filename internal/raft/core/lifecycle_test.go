@@ -68,7 +68,7 @@ func TestRun_ContinuesAfterLeaderStepsDown(tt *testing.T) {
 }
 
 func TestRun_ContinuesAsFollowerAfterHigherTermHeartbeatResponse(tt *testing.T) {
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 
 	c.n1.cfg.HeartbeatInterval = time.Millisecond
 	c.n1.cfg.ElectionTimeoutMin = time.Hour

@@ -9,7 +9,7 @@ import (
 )
 
 func TestProposeAndWait_ReturnsAfterCommandApplied(tt *testing.T) {
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 	leader := c.n1
 	c.transport.unregister(c.node3.ID)
 
@@ -32,7 +32,7 @@ func TestProposeAndWait_ReturnsAfterCommandApplied(tt *testing.T) {
 }
 
 func TestWaitApplied_ReturnsDeadlineExceededWhenCommandNotApplied(tt *testing.T) {
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 	leader := c.n1
 	c.transport.unregister(c.node3.ID)
 

@@ -18,7 +18,7 @@ func TestElection_CandidateWinsElectinWithQuorum(tt *testing.T) {
 	require.NoError(tt, err)
 	require.True(tt, ok)
 	require.Equal(tt, Leader, c.n1.state.Role)
-	require.Equal(tt, Term(2), c.n1.state.Term)
+	require.Equal(tt, Term(1), c.n1.state.Term)
 	require.Equal(tt, c.node1.ID, c.n1.state.VotedFor)
 
 	votes := 1
@@ -32,7 +32,7 @@ func TestElection_CandidateWinsElectinWithQuorum(tt *testing.T) {
 }
 
 func TestVoting_LeaderDoesNotStartElection(tt *testing.T) {
-	c := setupCluster(tt)
+	c := setupCluster(tt).WithLeader(tt, 1)
 
 	ok, err := c.n1.RunElection(context.Background())
 
@@ -53,13 +53,12 @@ func TestElection_CandidateLosesElectionWithoutQuorum(tt *testing.T) {
 	require.NoError(tt, err)
 	require.False(tt, ok)
 	require.Equal(tt, Follower, c.n1.state.Role)
-	require.Equal(tt, Term(2), c.n1.state.Term)
+	require.Equal(tt, Term(1), c.n1.state.Term)
 	require.Equal(tt, c.node1.ID, c.n1.state.VotedFor)
 }
 
 func TestVote_RejectsOutdatedTerm(tt *testing.T) {
-	c := setupCluster(tt)
-	c.n2.state.Term = 1
+	c := setupCluster(tt).WithLeader(tt, 1)
 
 	rsp := c.n2.Vote(context.Background(), VoteRequest{
 		CandidateID: c.node1.ID,
@@ -199,13 +198,12 @@ func TestRunElectionLoop_StartsElectionAfterTimeout(tt *testing.T) {
 
 	require.NoError(tt, err)
 	require.Equal(tt, Leader, c.n1.state.Role)
-	require.Equal(tt, Term(2), c.n1.state.Term)
+	require.Equal(tt, Term(1), c.n1.state.Term)
 }
 
 func TestRunElectionLoop_ReturnsAfterLostElection(tt *testing.T) {
 	c := setupCluster(tt)
 
-	c.n1.state.Role = Follower
 	c.n1.cfg.ElectionTimeoutMin = 1 * time.Millisecond
 
 	c.transport.unregister(c.node2.ID)
@@ -215,14 +213,13 @@ func TestRunElectionLoop_ReturnsAfterLostElection(tt *testing.T) {
 
 	require.NoError(tt, err)
 	require.Equal(tt, Follower, c.n1.state.Role)
-	require.Equal(tt, Term(2), c.n1.state.Term)
+	require.Equal(tt, Term(1), c.n1.state.Term)
 	require.Equal(tt, c.node1.ID, c.n1.state.VotedFor)
 }
 
 func TestRunElectionLoop_ResetsTimeoutOnLeaderSeen(tt *testing.T) {
 	c := setupCluster(tt)
 
-	c.n1.state.Role = Follower
 	c.n1.cfg.ElectionTimeoutMin = 20 * time.Millisecond
 
 	ctx, cancel := context.WithCancel(context.Background())
