@@ -10,7 +10,7 @@ type InMemLogStore struct {
 }
 
 func NewInMemLogStore() *InMemLogStore {
-	zeroEntry := LogEntry{LogID: ZeroLogID, Command: []byte{} }
+	zeroEntry := LogEntry{LogID: ZeroLogID, Command: []byte{}}
 	return &InMemLogStore{
 		entries: []LogEntry{zeroEntry},
 	}

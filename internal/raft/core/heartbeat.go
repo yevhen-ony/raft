@@ -36,7 +36,7 @@ func (r *Raft) Heartbeat(ctx context.Context) error {
 	r.mu.RUnlock()
 
 	if err != nil {
-		return err 
+		return err
 	}
 
 	rng := LogRange{

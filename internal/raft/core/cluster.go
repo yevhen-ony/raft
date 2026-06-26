@@ -1,20 +1,19 @@
-package core 
-
+package core
 
 type Cluster struct {
-	Self Node
+	Self  Node
 	Peers []Node
-}	
+}
 
 func NewCluster(config *Config) *Cluster {
 	peers := make([]Node, 0, len(config.Peers))
 	for _, peer := range config.Peers {
-		if peer != config.Self  {
+		if peer != config.Self {
 			peers = append(peers, peer)
 		}
 	}
 	cluster := Cluster{
-		Self: config.Self,
+		Self:  config.Self,
 		Peers: peers,
 	}
 	return &cluster
@@ -31,11 +30,10 @@ type Quorum struct {
 
 func (cl *Cluster) Quorum() Quorum {
 	size := cl.Size()
-  	accept := size/2 + 1
+	accept := size/2 + 1
 
-  	return Quorum{
-  		Accept: accept,
-  		Reject: size - accept + 1,
-  	}
+	return Quorum{
+		Accept: accept,
+		Reject: size - accept + 1,
+	}
 }
-

@@ -7,7 +7,7 @@ type Config struct {
 	Peers  []Node
 	Leader bool
 
-	HeartbeatInterval time.Duration
+	HeartbeatInterval  time.Duration
 	ElectionTimeoutMin time.Duration
 	ElectionTimeoutMax time.Duration
 }

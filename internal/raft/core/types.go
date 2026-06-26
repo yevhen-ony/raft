@@ -25,7 +25,7 @@ type LogRange struct {
 }
 
 type LogSegment struct {
-	Prev LogID
+	Prev    LogID
 	Entries []LogEntry
 }
 

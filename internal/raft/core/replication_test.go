@@ -282,27 +282,27 @@ func TestReplication_ProposeFailsWithoutQuorum(tt *testing.T) {
 }
 
 func TestReplication_ProposeAdvancesLeaderCommitIndex(tt *testing.T) {
-  	ctx := context.Background()
+	ctx := context.Background()
 
-  	c := setupCluster(tt)
-  	leader := c.n1
+	c := setupCluster(tt)
+	leader := c.n1
 
-  	require.NoError(tt, leader.Propose(ctx, []byte("hello")))
+	require.NoError(tt, leader.Propose(ctx, []byte("hello")))
 
-  	require.Equal(tt, Index(1), leader.state.CommitIndex)
+	require.Equal(tt, Index(1), leader.state.CommitIndex)
 }
 
 func TestReplication_ProposeDoesNotCommitWithoutQuorum(tt *testing.T) {
-  	ctx := context.Background()
+	ctx := context.Background()
 
-  	c := setupCluster(tt)
-  	c.transport.unregister("n2")
-  	c.transport.fail("n3", errors.New("boom"))
+	c := setupCluster(tt)
+	c.transport.unregister("n2")
+	c.transport.fail("n3", errors.New("boom"))
 
-  	leader := c.n1
+	leader := c.n1
 
-  	err := leader.Propose(ctx, []byte("hello"))
+	err := leader.Propose(ctx, []byte("hello"))
 
-  	require.ErrorIs(tt, err, ErrQuorumNotReached)
-  	require.Equal(tt, Index(0), leader.state.CommitIndex)
+	require.ErrorIs(tt, err, ErrQuorumNotReached)
+	require.Equal(tt, Index(0), leader.state.CommitIndex)
 }
