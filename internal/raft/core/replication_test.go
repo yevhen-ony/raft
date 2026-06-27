@@ -13,14 +13,15 @@ func TestReplication_ProposeReplicatesToFollower(tt *testing.T) {
 
 	c := setupCluster(tt).WithLeader(tt, 1)
 
-	require.NoError(tt, c.n1.Propose(ctx, []byte("hello")))
+	idx, err := c.n1.Propose(ctx, []byte("hello"))
+	require.NoError(tt, err)
 
 	entries, err := c.n1.log.EntriesAfter(ZeroLogID)
 	require.NoError(tt, err)
 	require.Len(tt, entries, 1)
 
 	entry := entries[0]
-	require.Equal(tt, Index(1), entry.Index)
+	require.Equal(tt, idx, entry.Index)
 	require.Equal(tt, Term(1), entry.Term)
 	require.Equal(tt, "hello", string(entry.Command))
 }
@@ -113,9 +114,14 @@ func TestReplication_ProposeReplicatesSequentialEntries(tt *testing.T) {
 	c := setupCluster(tt).WithLeader(tt, 1)
 	c.transport.unregister("n3")
 
-	require.NoError(tt, c.n1.Propose(ctx, []byte("one")))
-	require.NoError(tt, c.n1.Propose(ctx, []byte("two")))
-	require.NoError(tt, c.n1.Propose(ctx, []byte("three")))
+	var err error
+
+	_, err = c.n1.Propose(ctx, []byte("one"))
+	require.NoError(tt, err)
+	_, err = c.n1.Propose(ctx, []byte("two"))
+	require.NoError(tt, err)
+	_, err = c.n1.Propose(ctx, []byte("three"))
+	require.NoError(tt, err)
 
 	entries, err := c.n2.log.EntriesAfter(ZeroLogID)
 	require.NoError(tt, err)
@@ -183,7 +189,7 @@ func TestReplication_LeaderStepsDownOnHigherTermReplicationResponse(tt *testing.
 	c.transport.highTerm("n3", Term(2))
 
 	leader := c.n1
-	err := leader.Propose(context.Background(), []byte("hello"))
+	_, err := leader.Propose(context.Background(), []byte("hello"))
 
 	require.ErrorIs(tt, err, ErrNotLeader)
 	require.Equal(tt, Term(2), leader.state.Term)
@@ -201,8 +207,8 @@ func TestReplication_LeaderBacktracksWhenFollowerIsBehind(tt *testing.T) {
 		LogEntry{LogID: LogID{Index: 1, Term: 1}, Command: []byte("one")},
 		LogEntry{LogID: LogID{Index: 2, Term: 1}, Command: []byte("two")},
 	))
-
-	require.NoError(tt, leader.Propose(ctx, []byte("three")))
+	_, err := leader.Propose(ctx, []byte("three"))
+	require.NoError(tt, err)
 
 	entries, err := follower.log.EntriesAfter(ZeroLogID)
 	require.NoError(tt, err)
@@ -235,7 +241,8 @@ func TestReplication_LeaderBacktracksAndReplacesFollowerConflict(tt *testing.T) 
 		LogEntry{LogID: LogID{Index: 2, Term: 2}, Command: []byte("bad")},
 	))
 
-	require.NoError(tt, leader.Propose(ctx, []byte("three")))
+	_, err := leader.Propose(ctx, []byte("three"))
+	require.NoError(tt, err)
 
 	entries, err := follower.log.EntriesAfter(ZeroLogID)
 	require.NoError(tt, err)
@@ -261,7 +268,8 @@ func TestReplication_ProposeSucceedsWithQuorum(tt *testing.T) {
 	c.transport.unregister("n3")
 	leader, follower := c.n1, c.n2
 
-	require.NoError(tt, leader.Propose(ctx, []byte("hello")))
+	_, err := leader.Propose(ctx, []byte("hello"))
+	require.NoError(tt, err)
 
 	entries, err := follower.log.EntriesAfter(ZeroLogID)
 	require.NoError(tt, err)
@@ -277,7 +285,7 @@ func TestReplication_ProposeFailsWithoutQuorum(tt *testing.T) {
 	c.transport.fail("n3", errors.New("boom")) // failed
 
 	leader := c.n1
-	err := leader.Propose(ctx, []byte("hello"))
+	_, err := leader.Propose(ctx, []byte("hello"))
 	require.ErrorIs(tt, err, ErrQuorumNotReached)
 }
 
@@ -286,10 +294,11 @@ func TestReplication_ProposeAdvancesLeaderCommitIndex(tt *testing.T) {
 
 	c := setupCluster(tt).WithLeader(tt, 1)
 	leader := c.n1
+	
+	idx, err := leader.Propose(ctx, []byte("hello"))
+	require.NoError(tt, err)
 
-	require.NoError(tt, leader.Propose(ctx, []byte("hello")))
-
-	require.Equal(tt, Index(1), leader.state.CommitIndex)
+	require.Equal(tt, idx, leader.state.CommitIndex)
 }
 
 func TestReplication_ProposeDoesNotCommitWithoutQuorum(tt *testing.T) {
@@ -301,7 +310,7 @@ func TestReplication_ProposeDoesNotCommitWithoutQuorum(tt *testing.T) {
 
 	leader := c.n1
 
-	err := leader.Propose(ctx, []byte("hello"))
+	_, err := leader.Propose(ctx, []byte("hello"))
 
 	require.ErrorIs(tt, err, ErrQuorumNotReached)
 	require.Equal(tt, Index(0), leader.state.CommitIndex)

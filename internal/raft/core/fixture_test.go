@@ -79,8 +79,7 @@ func (f *clusterFixture) newRaft(
 	r, err := NewRaft(RaftDeps{
 		Log:            log,
 		State:          state,
-		LogTransport:   f.transport,
-		VoteTransport:  f.transport,
+		Transport:      f.transport,
 		CommandApplier: applier,
 		Config:         cfg,
 	})
@@ -89,11 +88,15 @@ func (f *clusterFixture) newRaft(
 	return r
 }
 
+func (f *clusterFixture) Nodes() []*Raft {
+	return []*Raft{f.n1, f.n2, f.n3}
+}
+
 func (f *clusterFixture) WithLeader(tt *testing.T, term Term) *clusterFixture {
 	tt.Helper()
 	ctx := context.Background()
 
-	for _, node := range []*Raft{f.n1, f.n2, f.n3} {
+	for _, node := range f.Nodes() {
 		node.state.Role = Follower
 		require.NoError(tt, node.state.SetTerm(ctx, term))
 		require.NoError(tt, node.state.SetVotedFor(ctx, ""))
@@ -102,6 +105,43 @@ func (f *clusterFixture) WithLeader(tt *testing.T, term Term) *clusterFixture {
 	require.NoError(tt, f.n1.state.SetVotedFor(ctx, f.n1.cluster.Self.ID))
 	f.n1.state.Role = Leader
 	return f
+}
+
+func (f *clusterFixture) Run(ctx context.Context) <-chan error {
+	done := make(chan error, 3)
+
+	for _, node := range f.Nodes() {
+		go func(node *Raft) {
+			done <- node.Run(ctx)
+		}(node)
+	}
+
+	return done
+}
+
+func countLeaders(c *clusterFixture) int {
+	leaders := 0
+	for _, node := range []*Raft{c.n1, c.n2, c.n3} {
+		node.mu.RLock()
+		if node.state.Role == Leader {
+			leaders++
+		}
+		node.mu.RUnlock()
+	}
+	return leaders
+}
+
+func (c *clusterFixture) Leader(tt *testing.T) *Raft {
+	for _, node := range []*Raft{c.n1, c.n2, c.n3} {
+		node.mu.RLock()
+		if node.state.Role == Leader {
+			node.mu.RUnlock()
+			return node
+		}
+		node.mu.RUnlock()
+	}
+	require.FailNow(tt, "leader not found")
+	return nil
 }
 
 type localTransport struct {
@@ -203,8 +243,7 @@ func (t *localTransport) RequestVote(
 	return node.Vote(ctx, req), nil
 }
 
-var _ LogEntryTransport = (*localTransport)(nil)
-var _ VoteTransport = (*localTransport)(nil)
+var _ Transport = (*localTransport)(nil)
 
 func requireEntries(tt *testing.T, node *Raft, expected ...string) {
 	tt.Helper()

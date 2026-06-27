@@ -15,7 +15,8 @@ func TestRaftCluster_HeartbeatDoesNotAppendOnUpToDateFollower(tt *testing.T) {
 	leader, follower := c.n1, c.n2
 	c.transport.unregister("n3")
 
-	require.NoError(tt, leader.Propose(ctx, []byte("hello")))
+	_, err := leader.Propose(ctx, []byte("hello"))
+	require.NoError(tt, err)
 	require.NoError(tt, leader.Heartbeat(ctx))
 
 	entries, err := follower.log.EntriesAfter(ZeroLogID)

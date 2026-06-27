@@ -15,8 +15,8 @@ const (
 )
 
 type LogID struct {
-	Index Index
-	Term  Term
+	Index Index `json:"index"`
+	Term  Term  `json:"term"`
 }
 
 type LogRange struct {
@@ -35,8 +35,8 @@ type LogEntry struct {
 }
 
 type Node struct {
-	ID   NodeID
-	Addr string
+	ID   NodeID `json:"id"`
+	Addr string `json:"addr"`
 }
 
 type AppendEntriesRequest struct {
@@ -61,4 +61,14 @@ type VoteRequest struct {
 type VoteResponse struct {
 	Term    Term
 	Granted bool
+}
+
+type RaftStatus struct {
+	NodeID      NodeID `json:"node_id"`
+	Role        Role   `json:"role"`
+	Term        Term   `json:"term"`
+	VotedFor    NodeID `json:"voted_for"`
+	CommitIndex Index  `json:"commit_index"`
+	LastApplied Index  `json:"last_applied"`
+	LastLogID   LogID  `json:"last_log_id"`
 }

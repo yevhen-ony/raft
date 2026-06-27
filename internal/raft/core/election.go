@@ -126,7 +126,7 @@ func (r *Raft) requestVote(
 		results <- VoteResult{Peer: peer, Outcome: VoteFailed, Error: err}
 		return
 	}
-	rsp, err := r.voteTransport.RequestVote(ctx, peer, req)
+	rsp, err := r.transport.RequestVote(ctx, peer, req)
 	if err != nil {
 		results <- VoteResult{Peer: peer, Outcome: VoteFailed, Error: err}
 		return

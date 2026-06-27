@@ -7,10 +7,9 @@ import (
 )
 
 type RaftDeps struct {
-	Log            *Log
-	State          *State
-	LogTransport   LogEntryTransport
-	VoteTransport  VoteTransport
+	Log   *Log
+	State *State
+	Transport
 	CommandApplier CommandApplier
 	Config         *Config
 }
@@ -22,8 +21,7 @@ type Raft struct {
 
 	commandApplier CommandApplier
 
-	logTransport  LogEntryTransport
-	voteTransport VoteTransport
+	transport Transport
 
 	// events
 	leaderSeen     chan struct{}
@@ -36,8 +34,8 @@ type Raft struct {
 }
 
 func NewRaft(deps RaftDeps) (*Raft, error) {
-	if deps.LogTransport == nil {
-		return nil, errors.New("missing log transport")
+	if deps.Transport == nil {
+		return nil, errors.New("missing transport")
 	}
 	if deps.Config == nil {
 		return nil, errors.New("missing config")
@@ -59,8 +57,7 @@ func NewRaft(deps RaftDeps) (*Raft, error) {
 
 		commandApplier: deps.CommandApplier,
 
-		logTransport:  deps.LogTransport,
-		voteTransport: deps.VoteTransport,
+		transport: deps.Transport,
 
 		leaderSeen:     make(chan struct{}, 1),
 		roleChanged:    make(chan struct{}, 1),

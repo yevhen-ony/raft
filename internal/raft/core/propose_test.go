@@ -21,7 +21,8 @@ func TestProposeAndWait_ReturnsAfterCommandApplied(tt *testing.T) {
 		done <- leader.RunApplierLoop(ctx)
 	}()
 
-	require.NoError(tt, leader.ProposeAndWait(context.Background(), []byte("hello")))
+	_, err := leader.ProposeAndWait(context.Background(), []byte("hello"))
+	require.NoError(tt, err)
 
 	require.Equal(tt, []string{"hello"}, c.n1Applier.Commands())
 	require.Equal(tt, Index(1), leader.state.CommitIndex)
@@ -36,12 +37,13 @@ func TestWaitApplied_ReturnsDeadlineExceededWhenCommandNotApplied(tt *testing.T)
 	leader := c.n1
 	c.transport.unregister(c.node3.ID)
 
-	require.NoError(tt, leader.Propose(context.Background(), []byte("hello")))
+	idx, err := leader.Propose(context.Background(), []byte("hello"))
+	require.NoError(tt, err)
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Millisecond)
 	defer cancel()
 
-	err := leader.waitApplied(ctx, 1)
+	err = leader.waitApplied(ctx, idx)
 
 	require.ErrorIs(tt, err, context.DeadlineExceeded)
 	require.Equal(tt, Index(1), leader.state.CommitIndex)

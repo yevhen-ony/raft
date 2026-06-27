@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+package raft.v1;
+
+option go_package = "raft/gen/proto/raft/v1;raft";
+
+service RaftPeerService {
+  rpc AppendEntries(AppendEntriesRequest) returns (AppendEntriesResponse);
+  rpc RequestVote(VoteRequest) returns (VoteResponse);
+}
+
+message AppendEntriesRequest {
+	string leader_id = 1;
+	uint64 term = 2; 
+    LogID prev_log_id = 3;
+    uint64 commit_index = 5;
+	repeated LogEntry entries = 6;
+}
+
+message AppendEntriesResponse {
+  uint64 term = 1; 
+  bool success = 2;
+}
+
+message LogID {
+  uint64 index = 1;
+  uint64 term = 2;
+}
+
+message LogEntry {
+  LogID log_id = 1;
+  bytes command = 2; 
+}
+
+message VoteRequest {
+  string candidate_id = 1; 
+  uint64 term = 2;
+  LogID last_log_id = 3;
+}
+
+message VoteResponse {
+  uint64 term = 1;
+  bool granted = 2;
+}

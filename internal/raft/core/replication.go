@@ -119,7 +119,7 @@ func (r *Raft) replicateLogRangeTo(
 			results <- ReplicationResult{Peer: peer, Outcome: ReplicateFailed, Error: err}
 			return
 		}
-		rsp, err := r.logTransport.AppendEntries(ctx, peer, req)
+		rsp, err := r.transport.AppendEntries(ctx, peer, req)
 		if err != nil {
 			results <- ReplicationResult{Peer: peer, Outcome: ReplicateFailed, Error: err}
 			return

@@ -12,11 +12,11 @@ func AppendEntriesRequestToPB(req c.AppendEntriesRequest) *api.AppendEntriesRequ
 	}
 
 	return &api.AppendEntriesRequest{
-		LeaderId:     string(req.LeaderID),
-		Term:         uint64(req.Term),
-		PrevLogIndex: uint64(req.PrevLogID.Index),
-		PrevLogTerm:  uint64(req.PrevLogID.Term),
-		Entries:      entries,
+		LeaderId:    string(req.LeaderID),
+		Term:        uint64(req.Term),
+		PrevLogId:   LogIDToPB(req.PrevLogID),
+		CommitIndex: uint64(req.CommitIndex),
+		Entries:     entries,
 	}
 }
 
@@ -27,13 +27,11 @@ func AppendEntriesRequestFromPB(req *api.AppendEntriesRequest) c.AppendEntriesRe
 	}
 
 	return c.AppendEntriesRequest{
-		LeaderID: c.NodeID(req.LeaderId),
-		Term:     c.Term(req.Term),
-		PrevLogID: c.LogID{
-			Index: c.Index(req.PrevLogIndex),
-			Term:  c.Term(req.PrevLogTerm),
-		},
-		Entries: entries,
+		LeaderID:    c.NodeID(req.LeaderId),
+		Term:        c.Term(req.Term),
+		PrevLogID:   LogIDFromPB(req.GetPrevLogId()),
+		CommitIndex: c.Index(req.CommitIndex),
+		Entries:     entries,
 	}
 }
 
@@ -53,18 +51,128 @@ func AppendEntriesResponseFromPB(rsp *api.AppendEntriesResponse) c.AppendEntries
 
 func LogEntryToPB(entry c.LogEntry) *api.LogEntry {
 	return &api.LogEntry{
-		Index:   uint64(entry.Index),
-		Term:    uint64(entry.Term),
+		LogId:   LogIDToPB(entry.LogID),
 		Command: append([]byte(nil), entry.Command...),
 	}
 }
 
 func LogEntryFromPB(entry *api.LogEntry) c.LogEntry {
 	return c.LogEntry{
-		LogID: c.LogID{
-			Index: c.Index(entry.Index),
-			Term:  c.Term(entry.Term),
-		},
+		LogID:   LogIDFromPB(entry.GetLogId()),
 		Command: append([]byte(nil), entry.Command...),
 	}
+}
+
+func LogIDToPB(logID c.LogID) *api.LogID {
+	return &api.LogID{
+		Index: uint64(logID.Index),
+		Term:  uint64(logID.Term),
+	}
+}
+
+func LogIDFromPB(logID *api.LogID) c.LogID {
+	return c.LogID{
+		Index: c.Index(logID.GetIndex()),
+		Term:  c.Term(logID.GetTerm()),
+	}
+}
+
+func VoteRequestToPB(req c.VoteRequest) *api.VoteRequest {
+	return &api.VoteRequest{
+		CandidateId: string(req.CandidateID),
+		Term:        uint64(req.Term),
+		LastLogId:   LogIDToPB(req.LastLogID),
+	}
+}
+
+func VoteRequestFromPB(req *api.VoteRequest) c.VoteRequest {
+	return c.VoteRequest{
+		CandidateID: c.NodeID(req.GetCandidateId()),
+		Term:        c.Term(req.GetTerm()),
+		LastLogID:   LogIDFromPB(req.GetLastLogId()),
+	}
+}
+
+func VoteResponseToPB(rsp c.VoteResponse) *api.VoteResponse {
+	return &api.VoteResponse{
+		Term:    uint64(rsp.Term),
+		Granted: rsp.Granted,
+	}
+}
+
+func VoteResponseFromPB(rsp *api.VoteResponse) c.VoteResponse {
+	return c.VoteResponse{
+		Term:    c.Term(rsp.GetTerm()),
+		Granted: rsp.GetGranted(),
+	}
+}
+
+func NodeToPB(node c.Node) *api.Node {
+	return &api.Node{
+		Id:   string(node.ID),
+		Addr: node.Addr,
+	}
+}
+
+func NodeFromPB(node *api.Node) c.Node {
+	return c.Node{
+		ID:   c.NodeID(node.GetId()),
+		Addr: node.GetAddr(),
+	}
+}
+
+func RaftStatusToPB(status c.RaftStatus) *api.RaftStatus {
+  	return &api.RaftStatus{
+  		NodeId:      string(status.NodeID),
+  		Role:        RoleToPB(status.Role),
+  		Term:        uint64(status.Term),
+  		VotedFor:    string(status.VotedFor),
+  		CommitIndex: uint64(status.CommitIndex),
+  		LastApplied: uint64(status.LastApplied),
+  		LastLogId:   LogIDToPB(status.LastLogID),
+  	}
+}
+
+func RoleToPB(role c.Role) string {
+  	switch role {
+  	case c.Candidate:
+  		return "candidate"
+  	case c.Leader:
+  		return "leader"
+  	default:
+  		return "follower"
+  	}
+}
+
+
+func RaftStatusFromPB(status *api.RaftStatus) c.RaftStatus {
+  	return c.RaftStatus{
+  		NodeID:      c.NodeID(status.GetNodeId()),
+  		Role:        RoleFromPB(status.GetRole()),
+  		Term:        c.Term(status.GetTerm()),
+  		VotedFor:    c.NodeID(status.GetVotedFor()),
+  		CommitIndex: c.Index(status.GetCommitIndex()),
+  		LastApplied: c.Index(status.GetLastApplied()),
+  		LastLogID:   LogIDFromPB(status.GetLastLogId()),
+  	}
+}
+
+func RoleFromPB(role string) c.Role {
+  	switch role {
+  	case "leader":
+  		return c.Leader
+  	case "candidate":
+  		return c.Candidate
+  	default:
+  		return c.Follower
+  	}
+}
+
+
+func mapSlice[T any, R any](items []T, fn func(T) R) []R {
+  	res := make([]R, len(items))
+  	for i, item := range items {
+  		res[i] = fn(item)
+  	}
+  	return res
 }

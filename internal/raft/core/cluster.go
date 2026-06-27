@@ -37,3 +37,7 @@ func (cl *Cluster) Quorum() Quorum {
 		Reject: size - accept + 1,
 	}
 }
+
+func (cl *Cluster) Nodes() []Node {
+	return append([]Node{cl.Self}, cl.Peers...)
+}

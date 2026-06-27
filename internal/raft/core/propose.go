@@ -26,17 +26,19 @@ func (r *Raft) propose(ctx context.Context, cmd []byte) (Index, error) {
 	return rng.Last, nil
 }
 
-func (r *Raft) Propose(ctx context.Context, cmd []byte) error {
-	_, err := r.propose(ctx, cmd)
-	return err
+func (r *Raft) Propose(ctx context.Context, cmd []byte) (Index, error) {
+	return r.propose(ctx, cmd)
 }
 
-func (r *Raft) ProposeAndWait(ctx context.Context, cmd []byte) error {
+func (r *Raft) ProposeAndWait(ctx context.Context, cmd []byte) (Index, error) {
 	idx, err := r.propose(ctx, cmd)
 	if err != nil {
-		return err
+		return 0, fmt.Errorf("propose: %w", err) 
 	}
-	return r.waitApplied(ctx, idx)
+	if err := r.waitApplied(ctx, idx); err != nil {
+		return 0, fmt.Errorf("wait applied: %w", err)
+	}
+	return idx, nil
 }
 
 func (r *Raft) appendToLog(ctx context.Context, commands ...[]byte) (Term, LogRange, error) {
