@@ -30,7 +30,6 @@ func NewCluster(ctx context.Context, bootstrapAddr string) (*Cluster, error) {
 		return nil, fmt.Errorf("bootstrap cluster: no nodes found")
 	}
 
-
 	transport, close, err := newControlTransport(nodes)
 	if err != nil {
 		return nil, fmt.Errorf("new transport: %w", err)
@@ -43,13 +42,13 @@ func NewCluster(ctx context.Context, bootstrapAddr string) (*Cluster, error) {
 
 	if _, err := cl.GetLeader(ctx); err != nil {
 		close()
-		return nil, err 
+		return nil, err
 	}
 	return cl, nil
 }
 
 func (cl *Cluster) GetLeader(ctx context.Context) (core.Node, error) {
-	lastErr := errors.New("retry exhausted") 
+	lastErr := errors.New("retry exhausted")
 
 	for range 3 {
 		for _, node := range cl.Nodes {
@@ -106,7 +105,7 @@ func newControlTransport(nodes []core.Node) (*rpc.GRPCRaftControlTransport, func
 
 func (cl *Cluster) Close() error {
 	if cl.close == nil {
-		return nil 
+		return nil
 	}
 	return cl.close()
 }

@@ -12,7 +12,7 @@ type executor struct {
 }
 
 func newExec(cl *Cluster, params cliParams) *executor {
-	return &executor{ cl: cl, params: params }
+	return &executor{cl: cl, params: params}
 }
 
 func (e *executor) Exec(ctx context.Context, cmd string) commandResult {
@@ -36,7 +36,7 @@ func (e *executor) Exec(ctx context.Context, cmd string) commandResult {
 	case "propose":
 		command := []byte(e.params.Command)
 		r.Result, r.Error = e.cl.Transport.Propose(ctx, target, command)
-	
+
 	case "stepdown":
 		r.Error = e.cl.Transport.StepDown(ctx, target)
 
@@ -46,4 +46,3 @@ func (e *executor) Exec(ctx context.Context, cmd string) commandResult {
 
 	return r
 }
-

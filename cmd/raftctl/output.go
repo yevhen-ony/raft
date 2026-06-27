@@ -20,7 +20,7 @@ type outputEnvelope struct {
 }
 
 func printResult(result commandResult, duration time.Duration) error {
-	resultErr := "" 
+	resultErr := ""
 	if result.Error != nil {
 		resultErr = result.Error.Error()
 	}

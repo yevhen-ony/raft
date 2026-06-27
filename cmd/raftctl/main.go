@@ -30,19 +30,19 @@ func run(args []string) error {
 
 	cl, err := NewCluster(ctx, params.Addr)
 	if err != nil {
-		return fmt.Errorf("new cluster: %w", err) 
+		return fmt.Errorf("new cluster: %w", err)
 	}
 	defer cl.Close()
-	
+
 	start := time.Now()
-	res := newExec(cl, params).Exec(ctx,  args[0])
+	res := newExec(cl, params).Exec(ctx, args[0])
 	elapsed := time.Since(start)
 
 	if err := printResult(res, elapsed); err != nil {
 		return fmt.Errorf("print result: %w", err)
 	}
 
-	return res.Error	
+	return res.Error
 }
 
 func printUsage() {
@@ -53,4 +53,3 @@ func printUsage() {
   raftctl propose   --addr 127.0.0.1:5001 --command hello [--target n2]
   raftctl stepdown  --addr 127.0.0.1:5001 [--target n2]`)
 }
-
