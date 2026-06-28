@@ -107,15 +107,15 @@ func VoteResponseFromPB(rsp *api.VoteResponse) c.VoteResponse {
 	}
 }
 
-func NodeToPB(node c.Node) *api.Node {
+func NodeToPB(node c.NodeRef) *api.Node {
 	return &api.Node{
 		Id:   string(node.ID),
 		Addr: node.Addr,
 	}
 }
 
-func NodeFromPB(node *api.Node) c.Node {
-	return c.Node{
+func NodeFromPB(node *api.Node) c.NodeRef {
+	return c.NodeRef{
 		ID:   c.NodeID(node.GetId()),
 		Addr: node.GetAddr(),
 	}

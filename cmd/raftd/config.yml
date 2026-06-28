@@ -1,3 +1,6 @@
+listener:
+  addr: 0.0.0.0:5001
+
 cluster:
   self_id: n1
   nodes:

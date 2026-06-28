@@ -9,22 +9,22 @@ import (
 	c "raft/internal/raft/core"
 )
 
-type GRPCRaftControlTransport struct {
+type GRPCControlTransport struct {
 	grpc ConnectionSource
 }
 
-func NewGRPCRaftControlTransport(grpc ConnectionSource) (*GRPCRaftControlTransport, error) {
+func NewGRPCControlTransport(grpc ConnectionSource) (*GRPCControlTransport, error) {
 	if grpc == nil {
 		return nil, errors.New("missing grpc connection source")
 	}
 
-	cc := &GRPCRaftControlTransport{
+	cc := &GRPCControlTransport{
 		grpc: grpc,
 	}
 	return cc, nil
 }
 
-func (cc *GRPCRaftControlTransport) client(nodeID c.NodeID) (api.RaftControlServiceClient, error) {
+func (cc *GRPCControlTransport) client(nodeID c.NodeID) (api.RaftControlServiceClient, error) {
 	conn, err := cc.grpc.Conn(nodeID)
 	if err != nil {
 		return nil, err
@@ -32,7 +32,7 @@ func (cc *GRPCRaftControlTransport) client(nodeID c.NodeID) (api.RaftControlServ
 	return api.NewRaftControlServiceClient(conn), nil
 }
 
-func (cc *GRPCRaftControlTransport) ListNodes(ctx context.Context, nodeID c.NodeID) ([]c.Node, error) {
+func (cc *GRPCControlTransport) ListNodes(ctx context.Context, nodeID c.NodeID) ([]c.NodeRef, error) {
 	client, err := cc.client(nodeID)
 	if err != nil {
 		return nil, fmt.Errorf("get grpc client: %w", err)
@@ -46,7 +46,7 @@ func (cc *GRPCRaftControlTransport) ListNodes(ctx context.Context, nodeID c.Node
 	return mapSlice(rsp.GetNodes(), NodeFromPB), nil
 }
 
-func (cc *GRPCRaftControlTransport) Status(ctx context.Context, nodeID c.NodeID) (c.RaftStatus, error) {
+func (cc *GRPCControlTransport) Status(ctx context.Context, nodeID c.NodeID) (c.RaftStatus, error) {
 	client, err := cc.client(nodeID)
 	if err != nil {
 		return c.RaftStatus{}, fmt.Errorf("get grpc client: %w", err)
@@ -60,7 +60,7 @@ func (cc *GRPCRaftControlTransport) Status(ctx context.Context, nodeID c.NodeID)
 	return RaftStatusFromPB(rsp.GetStatus()), nil
 }
 
-func (cc *GRPCRaftControlTransport) Propose(ctx context.Context, nodeID c.NodeID, command []byte) (c.Index, error) {
+func (cc *GRPCControlTransport) Propose(ctx context.Context, nodeID c.NodeID, command []byte) (c.Index, error) {
 	client, err := cc.client(nodeID)
 	if err != nil {
 		return 0, fmt.Errorf("get grpc client: %w", err)
@@ -78,7 +78,7 @@ func (cc *GRPCRaftControlTransport) Propose(ctx context.Context, nodeID c.NodeID
 	return c.Index(rsp.GetIndex()), nil
 }
 
-func (cc *GRPCRaftControlTransport) StepDown(ctx context.Context, nodeID c.NodeID) error {
+func (cc *GRPCControlTransport) StepDown(ctx context.Context, nodeID c.NodeID) error {
 	client, err := cc.client(nodeID)
 	if err != nil {
 		return fmt.Errorf("get grpc client: %w", err)

@@ -13,7 +13,7 @@ type GRPCRaftPeerServer struct {
 	node *c.Raft
 }
 
-func NewGRPCRaftServer(raft *c.Raft) (*GRPCRaftPeerServer, error) {
+func NewGRPCRaftPeerServer(raft *c.Raft) (*GRPCRaftPeerServer, error) {
 	if raft == nil {
 		return nil, errors.New("missing raft")
 	}

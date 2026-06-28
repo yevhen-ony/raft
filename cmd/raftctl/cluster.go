@@ -13,10 +13,10 @@ import (
 const bootstrapNodeID = core.NodeID("bootstrap")
 
 type Cluster struct {
-	Leader core.Node
-	Nodes  []core.Node
+	Leader core.NodeRef
+	Nodes  []core.NodeRef
 
-	Transport *rpc.GRPCRaftControlTransport
+	Transport *rpc.GRPCControlTransport
 
 	close func() error
 }
@@ -30,6 +30,7 @@ func NewCluster(ctx context.Context, bootstrapAddr string) (*Cluster, error) {
 		return nil, fmt.Errorf("bootstrap cluster: no nodes found")
 	}
 
+
 	transport, close, err := newControlTransport(nodes)
 	if err != nil {
 		return nil, fmt.Errorf("new transport: %w", err)
@@ -42,13 +43,13 @@ func NewCluster(ctx context.Context, bootstrapAddr string) (*Cluster, error) {
 
 	if _, err := cl.GetLeader(ctx); err != nil {
 		close()
-		return nil, err
+		return nil, err 
 	}
 	return cl, nil
 }
 
-func (cl *Cluster) GetLeader(ctx context.Context) (core.Node, error) {
-	lastErr := errors.New("retry exhausted")
+func (cl *Cluster) GetLeader(ctx context.Context) (core.NodeRef, error) {
+	lastErr := errors.New("retry exhausted") 
 
 	for range 3 {
 		for _, node := range cl.Nodes {
@@ -65,21 +66,21 @@ func (cl *Cluster) GetLeader(ctx context.Context) (core.Node, error) {
 
 		select {
 		case <-ctx.Done():
-			return core.Node{}, ctx.Err()
+			return core.NodeRef{}, ctx.Err()
 		case <-time.After(time.Second):
 		}
 	}
 
-	return core.Node{}, fmt.Errorf("leader not found: %w", lastErr)
+	return core.NodeRef{}, fmt.Errorf("leader not found: %w", lastErr)
 }
 
-func bootstrapCluster(ctx context.Context, addr string) ([]core.Node, error) {
-	bootstrap := core.Node{
+func bootstrapCluster(ctx context.Context, addr string) ([]core.NodeRef, error) {
+	bootstrap := core.NodeRef{
 		ID:   bootstrapNodeID,
 		Addr: addr,
 	}
 
-	client, close, err := newControlTransport([]core.Node{bootstrap})
+	client, close, err := newControlTransport([]core.NodeRef{bootstrap})
 	if err != nil {
 		return nil, err
 	}
@@ -88,13 +89,13 @@ func bootstrapCluster(ctx context.Context, addr string) ([]core.Node, error) {
 	return client.ListNodes(ctx, bootstrapNodeID)
 }
 
-func newControlTransport(nodes []core.Node) (*rpc.GRPCRaftControlTransport, func() error, error) {
+func newControlTransport(nodes []core.NodeRef) (*rpc.GRPCControlTransport, func() error, error) {
 	source, err := rpc.NewGRPCConnectionSource(nodes)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	client, err := rpc.NewGRPCRaftControlTransport(source)
+	client, err := rpc.NewGRPCControlTransport(source)
 	if err != nil {
 		_ = source.Close()
 		return nil, nil, err
@@ -105,7 +106,7 @@ func newControlTransport(nodes []core.Node) (*rpc.GRPCRaftControlTransport, func
 
 func (cl *Cluster) Close() error {
 	if cl.close == nil {
-		return nil
+		return nil 
 	}
 	return cl.close()
 }

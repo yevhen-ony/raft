@@ -9,9 +9,10 @@ import (
 type RaftDeps struct {
 	Log            *Log
 	State          *State
+	Cluster        *Cluster
 	Transport      Transport
 	CommandApplier CommandApplier
-	Config         *Config
+	Config         *RaftConfig
 }
 
 type Raft struct {
@@ -49,9 +50,12 @@ func NewRaft(deps RaftDeps) (*Raft, error) {
 	if deps.State == nil {
 		return nil, errors.New("missing state")
 	}
+	if deps.Cluster == nil {
+		return nil, errors.New("missing cluster")
+	}
 
 	r := &Raft{
-		cluster: NewCluster(&deps.Config.Cluster),
+		cluster: deps.Cluster,
 		state:   deps.State,
 		log:     deps.Log,
 
@@ -64,7 +68,7 @@ func NewRaft(deps RaftDeps) (*Raft, error) {
 		logCommitted:   make(chan struct{}, 1),
 		commandApplied: *NewBroadcaster(),
 
-		cfg: &deps.Config.Raft,
+		cfg: deps.Config,
 	}
 	return r, nil
 }

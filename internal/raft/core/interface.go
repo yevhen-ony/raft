@@ -9,6 +9,6 @@ type CommandApplier interface {
 }
 
 type Transport interface {
-	AppendEntries(context.Context, Node, AppendEntriesRequest) (AppendEntriesResponse, error)
-	RequestVote(context.Context, Node, VoteRequest) (VoteResponse, error)
+	AppendEntries(context.Context, NodeRef, AppendEntriesRequest) (AppendEntriesResponse, error)
+	RequestVote(context.Context, NodeRef, VoteRequest) (VoteResponse, error)
 }

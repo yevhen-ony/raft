@@ -4,28 +4,34 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	api "raft/gen/proto/raft/v1"
 	c "raft/internal/raft/core"
 )
 
-
-type GRPCRaftPeerTransport struct {
-	grpc ConnectionSource
+type Config struct {
+	RequestTimeout time.Duration
 }
 
-func NewGRPCRaftPeerTransport(grpc ConnectionSource) (*GRPCRaftPeerTransport, error) {
+type GRPCPeerTransport struct {
+	grpc ConnectionSource
+	cfg  *Config
+}
+
+func NewGRPCPeerTransport(grpc ConnectionSource, cfg *Config) (*GRPCPeerTransport, error) {
 	if grpc == nil {
 		return nil, errors.New("missing grpc client source")
 	}
-
-	t := &GRPCRaftPeerTransport{
-		grpc: grpc,
+	if cfg == nil {
+		return nil, errors.New("missing config")
 	}
+
+	t := &GRPCPeerTransport{grpc: grpc, cfg: cfg}
 	return t, nil
 }
 
-func (t *GRPCRaftPeerTransport) client(nodeID c.NodeID) (api.RaftPeerServiceClient, error) {
+func (t *GRPCPeerTransport) client(nodeID c.NodeID) (api.RaftPeerServiceClient, error) {
 	conn, err := t.grpc.Conn(nodeID)
 	if err != nil {
 		return nil, err
@@ -34,11 +40,14 @@ func (t *GRPCRaftPeerTransport) client(nodeID c.NodeID) (api.RaftPeerServiceClie
 	return c, nil
 }
 
-func (t *GRPCRaftPeerTransport) AppendEntries(
+func (t *GRPCPeerTransport) AppendEntries(
 	ctx context.Context,
-	peer c.Node,
+	peer c.NodeRef,
 	request c.AppendEntriesRequest,
 ) (c.AppendEntriesResponse, error) {
+
+	ctx, cancel := context.WithTimeout(ctx, t.cfg.RequestTimeout)
+	defer cancel()
 
 	client, err := t.client(peer.ID)
 	if err != nil {
@@ -54,12 +63,15 @@ func (t *GRPCRaftPeerTransport) AppendEntries(
 	return response, nil
 }
 
-
-func (t *GRPCRaftPeerTransport) RequestVote(
+func (t *GRPCPeerTransport) RequestVote(
 	ctx context.Context,
-	peer c.Node,
+	peer c.NodeRef,
 	request c.VoteRequest,
 ) (c.VoteResponse, error) {
+
+	ctx, cancel := context.WithTimeout(ctx, t.cfg.RequestTimeout)
+	defer cancel()
+
 	client, err := t.client(peer.ID)
 	if err != nil {
 		return c.VoteResponse{}, fmt.Errorf("get grpc client: %w", err)
@@ -74,4 +86,3 @@ func (t *GRPCRaftPeerTransport) RequestVote(
 	response := VoteResponseFromPB(rsp)
 	return response, nil
 }
-

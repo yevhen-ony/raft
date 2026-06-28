@@ -1,12 +1,12 @@
 package core
 
 type Cluster struct {
-	Self  Node
-	Peers []Node
+	Self  NodeRef
+	Peers []NodeRef
 }
 
 func NewCluster(config *ClusterConfig) *Cluster {
-	peers := make([]Node, 0, len(config.Peers))
+	peers := make([]NodeRef, 0, len(config.Peers))
 	for _, peer := range config.Peers {
 		if peer != config.Self {
 			peers = append(peers, peer)
@@ -38,6 +38,6 @@ func (cl *Cluster) Quorum() Quorum {
 	}
 }
 
-func (cl *Cluster) Nodes() []Node {
-	return append([]Node{cl.Self}, cl.Peers...)
+func (cl *Cluster) Nodes() []NodeRef {
+	return append([]NodeRef{cl.Self}, cl.Peers...)
 }

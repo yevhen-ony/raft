@@ -32,10 +32,12 @@ func TestRaft_RestoresStateAndLogFromStores(tt *testing.T) {
 	restoredLog, err := NewLog(ctx, logStore)
 	require.NoError(tt, err)
 
+	cfg := defConfig()
 	raft, err := NewRaft(RaftDeps{
-		Config:    config(),
+		Config:    &cfg.Raft,
 		State:     restoredState,
 		Log:       restoredLog,
+		Cluster:   NewCluster(&cfg.Cluster),
 		Transport: newLocalTransport(),
 	})
 	require.NoError(tt, err)
@@ -62,9 +64,11 @@ func TestRaft_PersistsGrantedVote(tt *testing.T) {
 	log, err := NewLog(ctx, NewInMemLogStore())
 	require.NoError(tt, err)
 
+	cfg := defConfig()
 	raft, err := NewRaft(RaftDeps{
-		Config:    config(),
+		Config:    &cfg.Raft,
 		State:     state,
+		Cluster:   NewCluster(&cfg.Cluster),
 		Log:       log,
 		Transport: newLocalTransport(),
 	})
@@ -154,7 +158,7 @@ func TestCluster_ElectedLeaderReplicatesWithoutLeadershipChange(tt *testing.T) {
 	_, err = leader.Propose(context.Background(), []byte("three"))
 	require.NoError(tt, err)
 	require.Same(tt, leader, c.Leader(tt))
-	
+
 	cancel()
 	for range 3 {
 		require.ErrorIs(tt, <-done, context.Canceled)

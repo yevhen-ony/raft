@@ -9,7 +9,7 @@ import (
 
 type election struct {
 	req    VoteRequest
-	peers  []Node
+	peers  []NodeRef
 	quorum Quorum
 }
 
@@ -32,7 +32,7 @@ func (r *Raft) startElection(ctx context.Context) (election, error) {
 			Term:        r.state.Term,
 			LastLogID:   r.log.LastLogID(),
 		},
-		peers:  append([]Node(nil), r.cluster.Peers...),
+		peers:  append([]NodeRef(nil), r.cluster.Peers...),
 		quorum: r.cluster.Quorum(),
 	}
 
@@ -110,7 +110,7 @@ const (
 )
 
 type VoteResult struct {
-	Peer    Node
+	Peer    NodeRef
 	Outcome VoteOutcome
 	Term    Term
 	Error   error
@@ -118,7 +118,7 @@ type VoteResult struct {
 
 func (r *Raft) requestVote(
 	ctx context.Context,
-	peer Node,
+	peer NodeRef,
 	req VoteRequest,
 	results chan<- VoteResult,
 ) {

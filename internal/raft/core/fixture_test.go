@@ -17,9 +17,9 @@ type clusterFixture struct {
 	n2 *Raft
 	n3 *Raft
 
-	node1 Node
-	node2 Node
-	node3 Node
+	node1 NodeRef
+	node2 NodeRef
+	node3 NodeRef
 
 	n1Applier *recordingCommandApplier
 	n2Applier *recordingCommandApplier
@@ -31,29 +31,41 @@ func setupCluster(tt *testing.T) *clusterFixture {
 
 	f := &clusterFixture{
 		transport: newLocalTransport(),
-		node1:     Node{ID: "n1"},
-		node2:     Node{ID: "n2"},
-		node3:     Node{ID: "n3"},
+		node1:     NodeRef{ID: "n1"},
+		node2:     NodeRef{ID: "n2"},
+		node3:     NodeRef{ID: "n3"},
 	}
 
-	cfg := config()
+	cfg := defConfig()
 
-	cc1 := *newClusterConfig(f.node1, []Node{f.node2, f.node3})
+	cc1 := cfg.WithCluster(f.node1, []NodeRef{f.node2, f.node3})
 	f.n1Applier = newRecordingCommandApplier()
-	f.n1 = f.newRaft(tt, cfg.WithCluster(cc1), f.n1Applier)
+	f.n1 = f.newRaft(tt, cc1, f.n1Applier)
 	f.transport.register(f.node1.ID, f.n1)
 
-	cc2 := *newClusterConfig(f.node2, []Node{f.node1, f.node3})
+	cc2 := cfg.WithCluster(f.node2, []NodeRef{f.node1, f.node3})
 	f.n2Applier = newRecordingCommandApplier()
-	f.n2 = f.newRaft(tt, cfg.WithCluster(cc2), f.n2Applier)
+	f.n2 = f.newRaft(tt, cc2, f.n2Applier)
 	f.transport.register(f.node2.ID, f.n2)
 
-	cc3 := *newClusterConfig(f.node3, []Node{f.node1, f.node2})
+	cc3 := cfg.WithCluster(f.node3, []NodeRef{f.node1, f.node2})
 	f.n3Applier = newRecordingCommandApplier()
-	f.n3 = f.newRaft(tt, cfg.WithCluster(cc3), f.n3Applier)
+	f.n3 = f.newRaft(tt, cc3, f.n3Applier)
 	f.transport.register(f.node3.ID, f.n3)
 
 	return f
+}
+
+type config struct {
+	Raft RaftConfig
+	Cluster ClusterConfig
+}
+
+func defConfig() *config{
+	return &config{
+		Raft: *raftConfig(),
+		Cluster: *clusterConfig(),
+	}
 }
 
 func raftConfig() *RaftConfig {
@@ -64,27 +76,23 @@ func raftConfig() *RaftConfig {
 	}
 }
 
+func (cfg *config) WithCluster(self NodeRef, peers []NodeRef) *config {
+	c := *cfg
+	c.Cluster.Self = self
+	c.Cluster.Peers = peers
+	return &c
+}
+
 func clusterConfig() *ClusterConfig {
 	return &ClusterConfig{
-		Self:  Node{ID: "n1"},
-		Peers: []Node{{ID: "n2"}, {ID: "n3"}},
-	}
-}
-
-func newClusterConfig(self Node, peers []Node) *ClusterConfig {
-	return &ClusterConfig{Self: self, Peers: peers}
-}
-
-func config() *Config {
-	return &Config{
-		Raft:    *raftConfig(),
-		Cluster: *clusterConfig(),
+		Self:  NodeRef{ID: "n1"},
+		Peers: []NodeRef{{ID: "n2"}, {ID: "n3"}},
 	}
 }
 
 func (f *clusterFixture) newRaft(
 	tt *testing.T,
-	cfg *Config,
+	cfg *config,
 	applier CommandApplier,
 ) *Raft {
 	tt.Helper()
@@ -102,9 +110,10 @@ func (f *clusterFixture) newRaft(
 	r, err := NewRaft(RaftDeps{
 		Log:            log,
 		State:          state,
+		Cluster:        NewCluster(&cfg.Cluster),
 		Transport:      f.transport,
 		CommandApplier: applier,
-		Config:         cfg,
+		Config:         &cfg.Raft,
 	})
 	require.NoError(tt, err)
 
@@ -212,7 +221,7 @@ func (t *localTransport) highTerm(id NodeID, term Term) {
 
 func (t *localTransport) AppendEntries(
 	ctx context.Context,
-	peer Node,
+	peer NodeRef,
 	req AppendEntriesRequest,
 ) (AppendEntriesResponse, error) {
 	if err := ctx.Err(); err != nil {
@@ -240,7 +249,7 @@ func (t *localTransport) AppendEntries(
 
 func (t *localTransport) RequestVote(
 	ctx context.Context,
-	peer Node,
+	peer NodeRef,
 	req VoteRequest,
 ) (VoteResponse, error) {
 	if err := ctx.Err(); err != nil {

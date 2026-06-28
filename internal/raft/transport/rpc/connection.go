@@ -16,7 +16,7 @@ type GRPCConnectionSource struct {
 	conns map[c.NodeID]*grpc.ClientConn
 }
 
-func NewGRPCConnectionSource(peers []c.Node) (*GRPCConnectionSource, error) {
+func NewGRPCConnectionSource(peers []c.NodeRef) (*GRPCConnectionSource, error) {
 	conns := make(map[c.NodeID]*grpc.ClientConn, len(peers))
 	for _, peer := range peers {
 		conn, err := newConn(peer.Addr)

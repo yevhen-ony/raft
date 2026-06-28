@@ -34,7 +34,7 @@ type LogEntry struct {
 	Command []byte
 }
 
-type Node struct {
+type NodeRef struct {
 	ID   NodeID `json:"id"`
 	Addr string `json:"addr"`
 }

@@ -24,7 +24,7 @@ func (r *Raft) StepDown(ctx context.Context) error {
 	return r.becomeFollower(ctx, r.state.Term)
 }
 
-func (r *Raft) Nodes() []Node {
+func (r *Raft) Nodes() []NodeRef {
 	r.mu.RLock()
 	defer r.mu.RUnlock()
 

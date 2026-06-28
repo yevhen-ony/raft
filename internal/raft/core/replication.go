@@ -7,7 +7,7 @@ import (
 )
 
 type replRound struct {
-	Peers  []Node
+	Peers  []NodeRef
 	Quorum Quorum
 	Term   Term
 }
@@ -20,7 +20,7 @@ func (r *Raft) startReplication(term Term) (*replRound, error) {
 		return nil, err
 	}
 	rr := &replRound{
-		Peers:  append([]Node(nil), r.cluster.Peers...),
+		Peers:  append([]NodeRef(nil), r.cluster.Peers...),
 		Quorum: r.cluster.Quorum(),
 		Term:   term,
 	}
@@ -95,7 +95,7 @@ const (
 )
 
 type ReplicationResult struct {
-	Peer    Node
+	Peer    NodeRef
 	Outcome ReplicationOutcome
 	Term    Term
 	Error   error
@@ -104,7 +104,7 @@ type ReplicationResult struct {
 // send replication request to a peer
 func (r *Raft) replicateLogRangeTo(
 	ctx context.Context,
-	peer Node,
+	peer NodeRef,
 	term Term,
 	rng LogRange,
 	results chan<- ReplicationResult,
