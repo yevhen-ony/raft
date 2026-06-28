@@ -1,0 +1,17 @@
+cluster:
+  self_id: n1
+  nodes:
+    - id: n1
+      addr: 127.0.0.1:5001
+    - id: n2
+      addr: 127.0.0.1:5002
+    - id: n3
+      addr: 127.0.0.1:5003
+
+raft:
+  heartbeat_interval: 100ms
+  election_timeout_min: 500ms
+  election_timeout_max: 1s
+
+transport:
+  request_timeout: 300ms

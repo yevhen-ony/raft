@@ -5,7 +5,7 @@ type Cluster struct {
 	Peers []Node
 }
 
-func NewCluster(config *Config) *Cluster {
+func NewCluster(config *ClusterConfig) *Cluster {
 	peers := make([]Node, 0, len(config.Peers))
 	for _, peer := range config.Peers {
 		if peer != config.Self {

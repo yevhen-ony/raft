@@ -11,13 +11,13 @@ func TestState_LoadsPersistentStateFromStore(tt *testing.T) {
 	ctx := context.Background()
 	store := NewInMemStateStore()
 
-	state, err := NewState(ctx, store, &Config{})
+	state, err := NewState(ctx, store)
 	require.NoError(tt, err)
 
 	require.NoError(tt, state.SetTerm(ctx, Term(3)))
 	require.NoError(tt, state.SetVotedFor(ctx, NodeID("n2")))
 
-	reloaded, err := NewState(ctx, store, &Config{})
+	reloaded, err := NewState(ctx, store)
 	require.NoError(tt, err)
 
 	require.Equal(tt, Term(3), reloaded.Term)
@@ -31,13 +31,13 @@ func TestState_SetTermClearsPersistedVote(tt *testing.T) {
 	ctx := context.Background()
 	store := NewInMemStateStore()
 
-	state, err := NewState(ctx, store, &Config{})
+	state, err := NewState(ctx, store)
 	require.NoError(tt, err)
 
 	require.NoError(tt, state.SetVotedFor(ctx, NodeID("n1")))
 	require.NoError(tt, state.SetTerm(ctx, Term(2)))
 
-	reloaded, err := NewState(ctx, store, &Config{})
+	reloaded, err := NewState(ctx, store)
 	require.NoError(tt, err)
 
 	require.Equal(tt, Term(2), reloaded.Term)

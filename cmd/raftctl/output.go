@@ -13,7 +13,7 @@ type commandResult struct {
 }
 
 type outputEnvelope struct {
-	Action     string `json:"action"`
+	Action     string `json:"action,omitempty"`
 	Result     any    `json:"result,omitempty"`
 	Error      string `json:"error,omitempty"`
 	DurationMs int64  `json:"duration_ms"`

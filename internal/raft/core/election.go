@@ -167,6 +167,8 @@ func (r *Raft) Vote(ctx context.Context, req VoteRequest) VoteResponse {
 	if err := r.state.SetVotedFor(ctx, req.CandidateID); err != nil {
 		return VoteResponse{Term: r.state.Term, Granted: false}
 	}
+
+	r.resetElection()
 	return VoteResponse{Term: r.state.Term, Granted: true}
 }
 
@@ -194,12 +196,15 @@ func (r *Raft) observeLeader(ctx context.Context, term Term) error {
 		return fmt.Errorf("become follower: %w", err)
 	}
 
+	r.resetElection()
+	return nil
+}
+
+func (r *Raft) resetElection() {
 	select {
 	case r.leaderSeen <- struct{}{}:
 	default: // non-blocking
 	}
-
-	return nil
 }
 
 func (r *Raft) RunElectionLoop(ctx context.Context) error {

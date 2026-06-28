@@ -3,9 +3,9 @@ package core
 import (
 	"context"
 	"fmt"
-	"path/filepath"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -36,44 +36,67 @@ func setupCluster(tt *testing.T) *clusterFixture {
 		node3:     Node{ID: "n3"},
 	}
 
+	cfg := config()
+
+	cc1 := *newClusterConfig(f.node1, []Node{f.node2, f.node3})
 	f.n1Applier = newRecordingCommandApplier()
-	f.n2Applier = newRecordingCommandApplier()
-	f.n3Applier = newRecordingCommandApplier()
-
-	f.n1 = f.newRaft(tt, f.node1, []Node{f.node2, f.node3}, f.n1Applier)
-	f.n2 = f.newRaft(tt, f.node2, []Node{f.node1, f.node3}, f.n2Applier)
-	f.n3 = f.newRaft(tt, f.node3, []Node{f.node1, f.node2}, f.n3Applier)
-
+	f.n1 = f.newRaft(tt, cfg.WithCluster(cc1), f.n1Applier)
 	f.transport.register(f.node1.ID, f.n1)
+
+	cc2 := *newClusterConfig(f.node2, []Node{f.node1, f.node3})
+	f.n2Applier = newRecordingCommandApplier()
+	f.n2 = f.newRaft(tt, cfg.WithCluster(cc2), f.n2Applier)
 	f.transport.register(f.node2.ID, f.n2)
+
+	cc3 := *newClusterConfig(f.node3, []Node{f.node1, f.node2})
+	f.n3Applier = newRecordingCommandApplier()
+	f.n3 = f.newRaft(tt, cfg.WithCluster(cc3), f.n3Applier)
 	f.transport.register(f.node3.ID, f.n3)
 
 	return f
 }
 
+func raftConfig() *RaftConfig {
+	return &RaftConfig{
+		HeartbeatInterval:  5 * time.Millisecond,
+		ElectionTimeoutMin: 25 * time.Millisecond,
+		ElectionTimeoutMax: 50 * time.Millisecond,
+	}
+}
+
+func clusterConfig() *ClusterConfig {
+	return &ClusterConfig{
+		Self:  Node{ID: "n1"},
+		Peers: []Node{{ID: "n2"}, {ID: "n3"}},
+	}
+}
+
+func newClusterConfig(self Node, peers []Node) *ClusterConfig {
+	return &ClusterConfig{Self: self, Peers: peers}
+}
+
+func config() *Config {
+	return &Config{
+		Raft:    *raftConfig(),
+		Cluster: *clusterConfig(),
+	}
+}
+
 func (f *clusterFixture) newRaft(
 	tt *testing.T,
-	self Node,
-	peers []Node,
+	cfg *Config,
 	applier CommandApplier,
 ) *Raft {
 	tt.Helper()
 
 	ctx := context.Background()
 
-	cfg := &Config{
-		Self:  self,
-		Peers: peers,
-	}
-
-	codec := JSONLogCodec{}
-	logPath := filepath.Join(tt.TempDir(), string(self.ID)+".log")
-	logStore := NewFileLogStore(logPath, codec)
+	logStore := NewInMemLogStore()
 	log, err := NewLog(ctx, logStore)
 	require.NoError(tt, err)
 
 	stateStore := NewInMemStateStore()
-	state, err := NewState(ctx, stateStore, cfg)
+	state, err := NewState(ctx, stateStore)
 	require.NoError(tt, err)
 
 	r, err := NewRaft(RaftDeps{

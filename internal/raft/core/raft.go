@@ -7,9 +7,9 @@ import (
 )
 
 type RaftDeps struct {
-	Log   *Log
-	State *State
-	Transport
+	Log            *Log
+	State          *State
+	Transport      Transport
 	CommandApplier CommandApplier
 	Config         *Config
 }
@@ -30,7 +30,7 @@ type Raft struct {
 	commandApplied Broadcaster
 
 	mu  sync.RWMutex
-	cfg *Config
+	cfg *RaftConfig
 }
 
 func NewRaft(deps RaftDeps) (*Raft, error) {
@@ -51,7 +51,7 @@ func NewRaft(deps RaftDeps) (*Raft, error) {
 	}
 
 	r := &Raft{
-		cluster: NewCluster(deps.Config),
+		cluster: NewCluster(&deps.Config.Cluster),
 		state:   deps.State,
 		log:     deps.Log,
 
@@ -64,7 +64,7 @@ func NewRaft(deps RaftDeps) (*Raft, error) {
 		logCommitted:   make(chan struct{}, 1),
 		commandApplied: *NewBroadcaster(),
 
-		cfg: deps.Config,
+		cfg: &deps.Config.Raft,
 	}
 	return r, nil
 }

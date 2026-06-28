@@ -25,7 +25,7 @@ type State struct {
 	store StateStore
 }
 
-func NewState(ctx context.Context, store StateStore, config *Config) (*State, error) {
+func NewState(ctx context.Context, store StateStore) (*State, error) {
 	ps, err := store.Load(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("load persistent state: %w", err)
@@ -38,13 +38,6 @@ func NewState(ctx context.Context, store StateStore, config *Config) (*State, er
 		LastApplied:     0,
 
 		store: store,
-	}
-
-	if config.Leader {
-		s.Role = Leader
-		if err := s.SetVotedFor(ctx, config.Self.ID); err != nil {
-			return nil, fmt.Errorf("set voted for: %w", err)
-		}
 	}
 	return s, nil
 }

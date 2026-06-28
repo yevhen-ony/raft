@@ -250,3 +250,37 @@ func TestRunElectionLoop_ResetsTimeoutOnLeaderSeen(tt *testing.T) {
 	cancel()
 	require.ErrorIs(tt, <-done, context.Canceled)
 }
+
+
+func TestRunElectionLoop_ResetsTimeoutAfterGrantingVote(tt *testing.T) {
+  	c := setupCluster(tt)
+
+  	c.n1.cfg.ElectionTimeoutMin = 20 * time.Millisecond
+  	c.n1.cfg.ElectionTimeoutMax = 20 * time.Millisecond
+
+  	ctx, cancel := context.WithCancel(context.Background())
+  	defer cancel()
+
+  	done := make(chan error, 1)
+  	go func() {
+  		done <- c.n1.RunElectionLoop(ctx)
+  	}()
+
+  	time.Sleep(10 * time.Millisecond)
+
+  	rsp := c.n1.Vote(context.Background(), VoteRequest{
+  		CandidateID: c.node2.ID,
+  		Term:        1,
+  		LastLogID:   ZeroLogID,
+  	})
+  	require.True(tt, rsp.Granted)
+
+  	select {
+  	case err := <-done:
+  		require.Failf(tt, "election loop returned before reset timeout", "err: %v", err)
+  	case <-time.After(15 * time.Millisecond):
+  	}
+
+  	cancel()
+  	require.ErrorIs(tt, <-done, context.Canceled)
+}

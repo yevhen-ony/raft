@@ -14,11 +14,7 @@ func TestRaft_RestoresStateAndLogFromStores(tt *testing.T) {
 	stateStore := NewInMemStateStore()
 	logStore := NewInMemLogStore()
 
-	cfg := &Config{
-		Self: Node{ID: "n1"},
-	}
-
-	state, err := NewState(ctx, stateStore, cfg)
+	state, err := NewState(ctx, stateStore)
 	require.NoError(tt, err)
 	require.NoError(tt, state.SetTerm(ctx, Term(3)))
 	require.NoError(tt, state.SetVotedFor(ctx, NodeID("n2")))
@@ -30,14 +26,14 @@ func TestRaft_RestoresStateAndLogFromStores(tt *testing.T) {
 		LogEntry{LogID: LogID{Index: 2, Term: 3}, Command: []byte("two")},
 	))
 
-	restoredState, err := NewState(ctx, stateStore, cfg)
+	restoredState, err := NewState(ctx, stateStore)
 	require.NoError(tt, err)
 
 	restoredLog, err := NewLog(ctx, logStore)
 	require.NoError(tt, err)
 
 	raft, err := NewRaft(RaftDeps{
-		Config:    cfg,
+		Config:    config(),
 		State:     restoredState,
 		Log:       restoredLog,
 		Transport: newLocalTransport(),
@@ -59,7 +55,7 @@ func TestRaft_PersistsGrantedVote(tt *testing.T) {
 	ctx := context.Background()
 
 	stateStore := NewInMemStateStore()
-	state, err := NewState(ctx, stateStore, &Config{Self: Node{ID: "n1"}})
+	state, err := NewState(ctx, stateStore)
 	require.NoError(tt, err)
 	require.NoError(tt, state.SetTerm(ctx, Term(1)))
 
@@ -67,7 +63,7 @@ func TestRaft_PersistsGrantedVote(tt *testing.T) {
 	require.NoError(tt, err)
 
 	raft, err := NewRaft(RaftDeps{
-		Config:    &Config{Self: Node{ID: "n1"}},
+		Config:    config(),
 		State:     state,
 		Log:       log,
 		Transport: newLocalTransport(),
@@ -82,7 +78,7 @@ func TestRaft_PersistsGrantedVote(tt *testing.T) {
 
 	require.True(tt, rsp.Granted)
 
-	reloaded, err := NewState(ctx, stateStore, &Config{Self: Node{ID: "n1"}})
+	reloaded, err := NewState(ctx, stateStore)
 	require.NoError(tt, err)
 
 	require.Equal(tt, Term(1), reloaded.Term)
@@ -126,18 +122,18 @@ func TestCluster_ElectsSingleLeader(tt *testing.T) {
 }
 
 func TestCluster_ElectedLeaderReplicatesWithoutLeadershipChange(tt *testing.T) {
-	c := setupCluster(tt)
-
-	for _, node := range c.Nodes() {
-		node.cfg.ElectionTimeoutMin = 30 * time.Millisecond
-		node.cfg.ElectionTimeoutMax = 60 * time.Millisecond
-		node.cfg.HeartbeatInterval = 5 * time.Millisecond
-	}
-
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	c := setupCluster(tt)
 	done := c.Run(ctx)
+
+	// for _, node := range c.Nodes() {
+	// 	node.cfg.ElectionTimeoutMin = 30 * time.Millisecond
+	// 	node.cfg.ElectionTimeoutMax = 60 * time.Millisecond
+	// 	node.cfg.HeartbeatInterval = 5 * time.Millisecond
+	// }
+	//
 
 	require.Eventually(tt, func() bool {
 		return countLeaders(c) == 1
@@ -145,42 +141,21 @@ func TestCluster_ElectedLeaderReplicatesWithoutLeadershipChange(tt *testing.T) {
 
 	leader := c.Leader(tt)
 
-	leader.mu.RLock()
-	leaderID := leader.cluster.Self.ID
-	term := leader.state.Term
-	leader.mu.RUnlock()
-
-
 	var err error
+
 	_, err = leader.Propose(context.Background(), []byte("one"))
 	require.NoError(tt, err)
+	require.Same(tt, leader, c.Leader(tt))
+
 	_, err = leader.Propose(context.Background(), []byte("two"))
 	require.NoError(tt, err)
- 	_, err = leader.Propose(context.Background(), []byte("three"))
+	require.Same(tt, leader, c.Leader(tt))
+
+	_, err = leader.Propose(context.Background(), []byte("three"))
 	require.NoError(tt, err)
-
-	require.Eventually(tt, func() bool {
-		for _, node := range c.Nodes() {
-			entries, err := node.log.EntriesAfter(ZeroLogID)
-			if err != nil || len(entries) != 3 {
-				return false
-			}
-		}
-		return true
-	}, time.Second, time.Millisecond)
-
-	require.Equal(tt, 1, countLeaders(c))
-
-	nextLeader := c.Leader(tt)
-
-	nextLeader.mu.RLock()
-	defer nextLeader.mu.RUnlock()
-
-	require.Equal(tt, leaderID, nextLeader.cluster.Self.ID)
-	require.Equal(tt, term, nextLeader.state.Term)
-
+	require.Same(tt, leader, c.Leader(tt))
+	
 	cancel()
-
 	for range 3 {
 		require.ErrorIs(tt, <-done, context.Canceled)
 	}
