@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net"
 
 	api "raft/gen/proto/raft/v1"
@@ -58,7 +59,9 @@ func (app *App) Close() error {
 
 func (app *App) Run(ctx context.Context) error {
 
-	listener, err := net.Listen("tcp", app.Config.Listener.Addr)
+	addr := app.Config.Listener.Addr
+	slog.InfoContext(ctx, "starting listener", "addr", addr)
+	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		return fmt.Errorf("listen: %w", err)
 	}
@@ -72,8 +75,14 @@ func (app *App) Run(ctx context.Context) error {
 
 	errCh := make(chan error, 2)
 
-	go func() { errCh <- grpcServer.Serve(listener) }()
-	go func() { errCh <- app.Node.Run(ctx) }()
+	go func() {
+		slog.InfoContext(ctx, "starting grpc server")
+		errCh <- grpcServer.Serve(listener) 
+	}()
+	go func() {
+		slog.InfoContext(ctx, "starting raft node")
+		errCh <- app.Node.Run(ctx) 
+	}()
 
 	select {
 	case <-ctx.Done():
