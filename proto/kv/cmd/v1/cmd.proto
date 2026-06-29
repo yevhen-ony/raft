@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package cmd.v1;
+
+option go_package = "raft/gen/proto/kv/cmd/v1";
+
+message Command {
+  Operation operation = 1;
+  string key = 2;
+  string value = 3;
+}
+
+enum Operation {
+  OPERATION_UNSPECIFIED = 0;
+  OPERATION_PUT = 1;
+  OPERATION_DELETE = 2;
+}
+
+
+
