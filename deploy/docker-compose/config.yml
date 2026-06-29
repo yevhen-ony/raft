@@ -1,5 +1,5 @@
 logger:
-  level: debug
+  level: debug 
 
 listener:
   addr: 0.0.0.0:5001

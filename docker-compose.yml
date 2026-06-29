@@ -4,6 +4,7 @@ services:
     image: ${RAFTD_TAG}
     environment:
       RAFT_SELF_ID: raft-0
+      RAFT_LOG_LEVEL: ${RAFTD_LOG_LEVEL}
     volumes:
       - ./deploy/docker-compose/config.yml:/etc/raft/config.yml:ro
     
@@ -12,6 +13,7 @@ services:
     image: ${RAFTD_TAG}
     environment:
       RAFT_SELF_ID: raft-1
+      RAFT_LOG_LEVEL: ${RAFTD_LOG_LEVEL}
     volumes:
       - ./deploy/docker-compose/config.yml:/etc/raft/config.yml:ro
 
@@ -20,6 +22,7 @@ services:
     image: ${RAFTD_TAG}
     environment:
       RAFT_SELF_ID: raft-2
+      RAFT_LOG_LEVEL: ${RAFTD_LOG_LEVEL}
     volumes:
       - ./deploy/docker-compose/config.yml:/etc/raft/config.yml:ro
 

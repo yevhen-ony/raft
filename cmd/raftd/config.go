@@ -12,6 +12,7 @@ import (
 )
 
 const (
+	envLoggerLevel             = "RAFT_LOG_LEVEL"
 	envSelfID                  = "RAFT_SELF_ID"
 	envHeartbeatInterval       = "RAFT_HEARTBEAT_INTERVAL"
 	envElectionTimeoutMin      = "RAFT_ELECTION_TIMEOUT_MIN"
@@ -47,6 +48,7 @@ func ConfigFromYAML(path string) (*Config, error) {
 }
 
 func (cfg *Config) OverrideWithEnv() {
+	valueFromEnv(&cfg.Logger.Level, envLoggerLevel)
 	valueFromEnv(&cfg.Cluster.SelfID, envSelfID)
 	valueFromEnv(&cfg.Raft.ElectionTimeoutMax, envElectionTimeoutMax)
 	valueFromEnv(&cfg.Raft.ElectionTimeoutMin, envElectionTimeoutMin)
