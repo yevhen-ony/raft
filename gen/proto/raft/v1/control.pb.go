@@ -59,7 +59,7 @@ func (*ListNodesRequest) Descriptor() ([]byte, []int) {
 
 type ListNodesResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Nodes         []*Node                `protobuf:"bytes,1,rep,name=nodes,proto3" json:"nodes,omitempty"`
+	Nodes         []*NodeRef             `protobuf:"bytes,1,rep,name=nodes,proto3" json:"nodes,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -94,14 +94,14 @@ func (*ListNodesResponse) Descriptor() ([]byte, []int) {
 	return file_raft_v1_control_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ListNodesResponse) GetNodes() []*Node {
+func (x *ListNodesResponse) GetNodes() []*NodeRef {
 	if x != nil {
 		return x.Nodes
 	}
 	return nil
 }
 
-type Node struct {
+type NodeRef struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
 	Addr          string                 `protobuf:"bytes,2,opt,name=addr,proto3" json:"addr,omitempty"`
@@ -109,20 +109,20 @@ type Node struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *Node) Reset() {
-	*x = Node{}
+func (x *NodeRef) Reset() {
+	*x = NodeRef{}
 	mi := &file_raft_v1_control_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *Node) String() string {
+func (x *NodeRef) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*Node) ProtoMessage() {}
+func (*NodeRef) ProtoMessage() {}
 
-func (x *Node) ProtoReflect() protoreflect.Message {
+func (x *NodeRef) ProtoReflect() protoreflect.Message {
 	mi := &file_raft_v1_control_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -134,19 +134,19 @@ func (x *Node) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use Node.ProtoReflect.Descriptor instead.
-func (*Node) Descriptor() ([]byte, []int) {
+// Deprecated: Use NodeRef.ProtoReflect.Descriptor instead.
+func (*NodeRef) Descriptor() ([]byte, []int) {
 	return file_raft_v1_control_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *Node) GetId() string {
+func (x *NodeRef) GetId() string {
 	if x != nil {
 		return x.Id
 	}
 	return ""
 }
 
-func (x *Node) GetAddr() string {
+func (x *NodeRef) GetAddr() string {
 	if x != nil {
 		return x.Addr
 	}
@@ -242,6 +242,7 @@ type RaftStatus struct {
 	CommitIndex   uint64                 `protobuf:"varint,5,opt,name=commit_index,json=commitIndex,proto3" json:"commit_index,omitempty"`
 	LastApplied   uint64                 `protobuf:"varint,6,opt,name=last_applied,json=lastApplied,proto3" json:"last_applied,omitempty"`
 	LastLogId     *LogID                 `protobuf:"bytes,7,opt,name=last_log_id,json=lastLogId,proto3" json:"last_log_id,omitempty"`
+	Leader        *NodeRef               `protobuf:"bytes,8,opt,name=leader,proto3" json:"leader,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -321,6 +322,13 @@ func (x *RaftStatus) GetLastApplied() uint64 {
 func (x *RaftStatus) GetLastLogId() *LogID {
 	if x != nil {
 		return x.LastLogId
+	}
+	return nil
+}
+
+func (x *RaftStatus) GetLeader() *NodeRef {
+	if x != nil {
+		return x.Leader
 	}
 	return nil
 }
@@ -490,15 +498,15 @@ var File_raft_v1_control_proto protoreflect.FileDescriptor
 const file_raft_v1_control_proto_rawDesc = "" +
 	"\n" +
 	"\x15raft/v1/control.proto\x12\araft.v1\x1a\x12raft/v1/peer.proto\"\x12\n" +
-	"\x10ListNodesRequest\"8\n" +
-	"\x11ListNodesResponse\x12#\n" +
-	"\x05nodes\x18\x01 \x03(\v2\r.raft.v1.NodeR\x05nodes\"*\n" +
-	"\x04Node\x12\x0e\n" +
+	"\x10ListNodesRequest\";\n" +
+	"\x11ListNodesResponse\x12&\n" +
+	"\x05nodes\x18\x01 \x03(\v2\x10.raft.v1.NodeRefR\x05nodes\"-\n" +
+	"\aNodeRef\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
 	"\x04addr\x18\x02 \x01(\tR\x04addr\"\x0f\n" +
 	"\rStatusRequest\"=\n" +
 	"\x0eStatusResponse\x12+\n" +
-	"\x06status\x18\x01 \x01(\v2\x13.raft.v1.RaftStatusR\x06status\"\xe0\x01\n" +
+	"\x06status\x18\x01 \x01(\v2\x13.raft.v1.RaftStatusR\x06status\"\x8a\x02\n" +
 	"\n" +
 	"RaftStatus\x12\x17\n" +
 	"\anode_id\x18\x01 \x01(\tR\x06nodeId\x12\x12\n" +
@@ -507,7 +515,8 @@ const file_raft_v1_control_proto_rawDesc = "" +
 	"\tvoted_for\x18\x04 \x01(\tR\bvotedFor\x12!\n" +
 	"\fcommit_index\x18\x05 \x01(\x04R\vcommitIndex\x12!\n" +
 	"\flast_applied\x18\x06 \x01(\x04R\vlastApplied\x12.\n" +
-	"\vlast_log_id\x18\a \x01(\v2\x0e.raft.v1.LogIDR\tlastLogId\"*\n" +
+	"\vlast_log_id\x18\a \x01(\v2\x0e.raft.v1.LogIDR\tlastLogId\x12(\n" +
+	"\x06leader\x18\b \x01(\v2\x10.raft.v1.NodeRefR\x06leader\"*\n" +
 	"\x0eProposeRequest\x12\x18\n" +
 	"\acommand\x18\x01 \x01(\fR\acommand\"'\n" +
 	"\x0fProposeResponse\x12\x14\n" +
@@ -536,7 +545,7 @@ var file_raft_v1_control_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_raft_v1_control_proto_goTypes = []any{
 	(*ListNodesRequest)(nil),  // 0: raft.v1.ListNodesRequest
 	(*ListNodesResponse)(nil), // 1: raft.v1.ListNodesResponse
-	(*Node)(nil),              // 2: raft.v1.Node
+	(*NodeRef)(nil),           // 2: raft.v1.NodeRef
 	(*StatusRequest)(nil),     // 3: raft.v1.StatusRequest
 	(*StatusResponse)(nil),    // 4: raft.v1.StatusResponse
 	(*RaftStatus)(nil),        // 5: raft.v1.RaftStatus
@@ -547,22 +556,23 @@ var file_raft_v1_control_proto_goTypes = []any{
 	(*LogID)(nil),             // 10: raft.v1.LogID
 }
 var file_raft_v1_control_proto_depIdxs = []int32{
-	2,  // 0: raft.v1.ListNodesResponse.nodes:type_name -> raft.v1.Node
+	2,  // 0: raft.v1.ListNodesResponse.nodes:type_name -> raft.v1.NodeRef
 	5,  // 1: raft.v1.StatusResponse.status:type_name -> raft.v1.RaftStatus
 	10, // 2: raft.v1.RaftStatus.last_log_id:type_name -> raft.v1.LogID
-	0,  // 3: raft.v1.RaftControlService.ListNodes:input_type -> raft.v1.ListNodesRequest
-	3,  // 4: raft.v1.RaftControlService.Status:input_type -> raft.v1.StatusRequest
-	6,  // 5: raft.v1.RaftControlService.Propose:input_type -> raft.v1.ProposeRequest
-	8,  // 6: raft.v1.RaftControlService.StepDown:input_type -> raft.v1.StepDownRequest
-	1,  // 7: raft.v1.RaftControlService.ListNodes:output_type -> raft.v1.ListNodesResponse
-	4,  // 8: raft.v1.RaftControlService.Status:output_type -> raft.v1.StatusResponse
-	7,  // 9: raft.v1.RaftControlService.Propose:output_type -> raft.v1.ProposeResponse
-	9,  // 10: raft.v1.RaftControlService.StepDown:output_type -> raft.v1.StepDownResponse
-	7,  // [7:11] is the sub-list for method output_type
-	3,  // [3:7] is the sub-list for method input_type
-	3,  // [3:3] is the sub-list for extension type_name
-	3,  // [3:3] is the sub-list for extension extendee
-	0,  // [0:3] is the sub-list for field type_name
+	2,  // 3: raft.v1.RaftStatus.leader:type_name -> raft.v1.NodeRef
+	0,  // 4: raft.v1.RaftControlService.ListNodes:input_type -> raft.v1.ListNodesRequest
+	3,  // 5: raft.v1.RaftControlService.Status:input_type -> raft.v1.StatusRequest
+	6,  // 6: raft.v1.RaftControlService.Propose:input_type -> raft.v1.ProposeRequest
+	8,  // 7: raft.v1.RaftControlService.StepDown:input_type -> raft.v1.StepDownRequest
+	1,  // 8: raft.v1.RaftControlService.ListNodes:output_type -> raft.v1.ListNodesResponse
+	4,  // 9: raft.v1.RaftControlService.Status:output_type -> raft.v1.StatusResponse
+	7,  // 10: raft.v1.RaftControlService.Propose:output_type -> raft.v1.ProposeResponse
+	9,  // 11: raft.v1.RaftControlService.StepDown:output_type -> raft.v1.StepDownResponse
+	8,  // [8:12] is the sub-list for method output_type
+	4,  // [4:8] is the sub-list for method input_type
+	4,  // [4:4] is the sub-list for extension type_name
+	4,  // [4:4] is the sub-list for extension extendee
+	0,  // [0:4] is the sub-list for field type_name
 }
 
 func init() { file_raft_v1_control_proto_init() }

@@ -30,7 +30,6 @@ func NewCluster(ctx context.Context, bootstrapAddr string) (*Cluster, error) {
 		return nil, fmt.Errorf("bootstrap cluster: no nodes found")
 	}
 
-
 	transport, close, err := newControlTransport(nodes)
 	if err != nil {
 		return nil, fmt.Errorf("new transport: %w", err)
@@ -60,6 +59,10 @@ func (cl *Cluster) GetLeader(ctx context.Context) (core.NodeRef, error) {
 			}
 			if status.Role == core.Leader {
 				cl.Leader = node
+				return cl.Leader, nil
+			}
+			if status.Leader.ID != "" {
+				cl.Leader = status.Leader
 				return cl.Leader, nil
 			}
 		}

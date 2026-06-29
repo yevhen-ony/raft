@@ -14,6 +14,7 @@ func (r *Raft) Status() RaftStatus {
 		CommitIndex: r.state.CommitIndex,
 		LastApplied: r.state.LastApplied,
 		LastLogID:   r.log.LastLogID(),
+		Leader:      r.cluster.Node(r.state.LeaderID),
 	}
 }
 
@@ -21,7 +22,7 @@ func (r *Raft) StepDown(ctx context.Context) error {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	return r.becomeFollower(ctx, r.state.Term)
+	return r.becomeFollower(ctx, r.state.Term, "")
 }
 
 func (r *Raft) Nodes() []NodeRef {

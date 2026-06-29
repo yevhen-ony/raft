@@ -41,3 +41,15 @@ func (cl *Cluster) Quorum() Quorum {
 func (cl *Cluster) Nodes() []NodeRef {
 	return append([]NodeRef{cl.Self}, cl.Peers...)
 }
+
+func (cl *Cluster) Node(id NodeID) NodeRef {
+	if id == cl.Self.ID {
+		return cl.Self
+	}
+	for _, n := range cl.Peers {
+		if n.ID == id {
+			return n
+		}
+	}
+	return NodeRef{}
+}

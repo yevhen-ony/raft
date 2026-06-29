@@ -69,7 +69,7 @@ LOOP:
 
 			case ReplicateHigherTerm:
 				r.mu.Lock()
-				err = r.becomeFollower(ctx, res.Term)
+				err = r.becomeFollower(ctx, res.Term, "")
 				r.mu.Unlock()
 
 				if err != nil {
@@ -109,7 +109,7 @@ func (r *Raft) replicateLogRangeTo(
 	rng LogRange,
 	results chan<- ReplicationResult,
 ) {
-	slog.DebugContext(ctx, "sending replication request", "term", term, "addr", peer.Addr)
+	slog.DebugContext(ctx, "sending replication request", "term", term, "addr", peer.Addr )
 	for {
 		if err := ctx.Err(); err != nil {
 			results <- ReplicationResult{Peer: peer, Outcome: ReplicateFailed, Error: err}

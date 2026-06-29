@@ -89,15 +89,15 @@ LOOP:
 	defer r.mu.Unlock()
 
 	if term > e.req.Term {
-		err := r.becomeFollower(ctx, term)
+		err := r.becomeFollower(ctx, term, "")
 		return false, err
 	}
 	if granted < e.quorum.Accept {
-		err = r.becomeFollower(ctx, e.req.Term)
+		err = r.becomeFollower(ctx, e.req.Term, "")
 		return false, err
 	}
 	if err := r.becomeLeader(e.req.Term); err != nil {
-		err = r.becomeFollower(ctx, e.req.Term)
+		err = r.becomeFollower(ctx, e.req.Term, "")
 		return false, err
 	}
 	return true, nil
@@ -154,7 +154,7 @@ func (r *Raft) Vote(ctx context.Context, req VoteRequest) VoteResponse {
 	}
 
 	if r.state.Term < req.Term {
-		if err := r.becomeFollower(ctx, req.Term); err != nil {
+		if err := r.becomeFollower(ctx, req.Term, ""); err != nil {
 			return VoteResponse{Term: r.state.Term, Granted: false}
 		}
 	}
@@ -191,12 +191,12 @@ func (r *Raft) nextElectionTimeout() time.Duration {
 	return minDur + delta*time.Duration(steps[i])/10
 }
 
-func (r *Raft) observeLeader(ctx context.Context, term Term) error {
+func (r *Raft) observeLeader(ctx context.Context, term Term, leaderID NodeID) error {
 	if r.state.Term > term {
 		return ErrOutdatedTerm
 	}
 
-	if err := r.becomeFollower(ctx, term); err != nil {
+	if err := r.becomeFollower(ctx, term, leaderID); err != nil {
 		return fmt.Errorf("become follower: %w", err)
 	}
 

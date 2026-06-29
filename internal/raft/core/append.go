@@ -13,7 +13,7 @@ func (r *Raft) AppendEntries(
 	r.mu.Lock()
 	defer r.mu.Unlock()
 
-	if err := r.observeLeader(ctx, req.Term); err != nil {
+	if err := r.observeLeader(ctx, req.Term, req.LeaderID); err != nil {
 		slog.WarnContext(ctx, "observe leader failes", "term", req.Term, "error", err)
 		return AppendEntriesResponse{Term: r.state.Term, Success: false}
 	}

@@ -16,10 +16,10 @@ service RaftControlService {
 message ListNodesRequest {}
 
 message ListNodesResponse {
-  repeated Node nodes = 1;
+  repeated NodeRef nodes = 1;
 }
 
-message Node {
+message NodeRef {
   string id = 1;
   string addr = 2;
 }
@@ -38,6 +38,7 @@ message RaftStatus {
   uint64 commit_index = 5;
   uint64 last_applied = 6;
   raft.v1.LogID last_log_id = 7;
+  NodeRef leader = 8;
 }
 
 message ProposeRequest {

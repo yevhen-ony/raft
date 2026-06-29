@@ -107,14 +107,14 @@ func VoteResponseFromPB(rsp *api.VoteResponse) c.VoteResponse {
 	}
 }
 
-func NodeToPB(node c.NodeRef) *api.Node {
-	return &api.Node{
+func NodeRefToPB(node c.NodeRef) *api.NodeRef {
+	return &api.NodeRef{
 		Id:   string(node.ID),
 		Addr: node.Addr,
 	}
 }
 
-func NodeFromPB(node *api.Node) c.NodeRef {
+func NodeRefFromPB(node *api.NodeRef) c.NodeRef {
 	return c.NodeRef{
 		ID:   c.NodeID(node.GetId()),
 		Addr: node.GetAddr(),
@@ -122,57 +122,57 @@ func NodeFromPB(node *api.Node) c.NodeRef {
 }
 
 func RaftStatusToPB(status c.RaftStatus) *api.RaftStatus {
-  	return &api.RaftStatus{
-  		NodeId:      string(status.NodeID),
-  		Role:        RoleToPB(status.Role),
-  		Term:        uint64(status.Term),
-  		VotedFor:    string(status.VotedFor),
-  		CommitIndex: uint64(status.CommitIndex),
-  		LastApplied: uint64(status.LastApplied),
-  		LastLogId:   LogIDToPB(status.LastLogID),
-  	}
+	return &api.RaftStatus{
+		NodeId:      string(status.NodeID),
+		Role:        RoleToPB(status.Role),
+		Term:        uint64(status.Term),
+		VotedFor:    string(status.VotedFor),
+		CommitIndex: uint64(status.CommitIndex),
+		LastApplied: uint64(status.LastApplied),
+		LastLogId:   LogIDToPB(status.LastLogID),
+		Leader:      NodeRefToPB(status.Leader),
+	}
 }
 
 func RoleToPB(role c.Role) string {
-  	switch role {
-  	case c.Candidate:
-  		return "candidate"
-  	case c.Leader:
-  		return "leader"
-  	default:
-  		return "follower"
-  	}
+	switch role {
+	case c.Candidate:
+		return "candidate"
+	case c.Leader:
+		return "leader"
+	default:
+		return "follower"
+	}
 }
 
-
 func RaftStatusFromPB(status *api.RaftStatus) c.RaftStatus {
-  	return c.RaftStatus{
-  		NodeID:      c.NodeID(status.GetNodeId()),
-  		Role:        RoleFromPB(status.GetRole()),
-  		Term:        c.Term(status.GetTerm()),
-  		VotedFor:    c.NodeID(status.GetVotedFor()),
-  		CommitIndex: c.Index(status.GetCommitIndex()),
-  		LastApplied: c.Index(status.GetLastApplied()),
-  		LastLogID:   LogIDFromPB(status.GetLastLogId()),
-  	}
+	return c.RaftStatus{
+		NodeID:      c.NodeID(status.GetNodeId()),
+		Role:        RoleFromPB(status.GetRole()),
+		Term:        c.Term(status.GetTerm()),
+		VotedFor:    c.NodeID(status.GetVotedFor()),
+		CommitIndex: c.Index(status.GetCommitIndex()),
+		LastApplied: c.Index(status.GetLastApplied()),
+		LastLogID:   LogIDFromPB(status.GetLastLogId()),
+		Leader:      NodeRefFromPB(status.GetLeader()),
+	}
 }
 
 func RoleFromPB(role string) c.Role {
-  	switch role {
-  	case "leader":
-  		return c.Leader
-  	case "candidate":
-  		return c.Candidate
-  	default:
-  		return c.Follower
-  	}
+	switch role {
+	case "leader":
+		return c.Leader
+	case "candidate":
+		return c.Candidate
+	default:
+		return c.Follower
+	}
 }
 
-
 func mapSlice[T any, R any](items []T, fn func(T) R) []R {
-  	res := make([]R, len(items))
-  	for i, item := range items {
-  		res[i] = fn(item)
-  	}
-  	return res
+	res := make([]R, len(items))
+	for i, item := range items {
+		res[i] = fn(item)
+	}
+	return res
 }

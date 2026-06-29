@@ -19,6 +19,7 @@ type State struct {
 	PersistentState
 
 	Role        Role
+	LeaderID    NodeID
 	CommitIndex Index
 	LastApplied Index
 

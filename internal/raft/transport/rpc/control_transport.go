@@ -43,7 +43,7 @@ func (cc *GRPCControlTransport) ListNodes(ctx context.Context, nodeID c.NodeID) 
 		return nil, fmt.Errorf("rpc: %w", err)
 	}
 
-	return mapSlice(rsp.GetNodes(), NodeFromPB), nil
+	return mapSlice(rsp.GetNodes(), NodeRefFromPB), nil
 }
 
 func (cc *GRPCControlTransport) Status(ctx context.Context, nodeID c.NodeID) (c.RaftStatus, error) {

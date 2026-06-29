@@ -64,11 +64,12 @@ type VoteResponse struct {
 }
 
 type RaftStatus struct {
-	NodeID      NodeID `json:"node_id"`
-	Role        Role   `json:"role"`
-	Term        Term   `json:"term"`
-	VotedFor    NodeID `json:"voted_for"`
-	CommitIndex Index  `json:"commit_index"`
-	LastApplied Index  `json:"last_applied"`
-	LastLogID   LogID  `json:"last_log_id"`
+	NodeID      NodeID  `json:"node_id"`
+	Role        Role    `json:"role"`
+	Term        Term    `json:"term"`
+	VotedFor    NodeID  `json:"voted_for"`
+	CommitIndex Index   `json:"commit_index"`
+	LastApplied Index   `json:"last_applied"`
+	LastLogID   LogID   `json:"last_log_id"`
+	Leader      NodeRef `json:"leader"`
 }

@@ -65,7 +65,7 @@ func TestRunHeartbeatLoop_ReturnsAfterRoleChange(tt *testing.T) {
 	}()
 
 	c.n1.mu.Lock()
-	c.n1.becomeFollower(ctx, c.n1.state.Term)
+	c.n1.becomeFollower(ctx, c.n1.state.Term, "")
 	c.n1.mu.Unlock()
 
 	require.NoError(tt, <-done)

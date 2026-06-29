@@ -30,7 +30,7 @@ func (s *GRPCRaftControlServer) ListNodes(
 
 	nodes := s.node.Nodes()
 	rsp := &api.ListNodesResponse{
-		Nodes: mapSlice(nodes, NodeToPB),
+		Nodes: mapSlice(nodes, NodeRefToPB),
 	}
 	return rsp, nil
 }

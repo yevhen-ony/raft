@@ -91,15 +91,18 @@ func (r *Raft) becomeLeader(term Term) error {
 		return ErrNotCandidate
 	}
 	r.changeRole(Leader)
+	r.state.LeaderID = r.cluster.Self.ID
+	slog.Info("became leader", "term", term)
 	return nil
 }
 
-func (r *Raft) becomeFollower(ctx context.Context, term Term) error {
+func (r *Raft) becomeFollower(ctx context.Context, term Term, leaderID NodeID) error {
 	if term > r.state.Term {
 		if err := r.state.SetTerm(ctx, term); err != nil {
 			return fmt.Errorf("set term: %w", err)
 		}
 	}
 	r.changeRole(Follower)
+	r.state.LeaderID = leaderID
 	return nil
 }
