@@ -3,6 +3,7 @@ package rpc
 import (
 	"context"
 	"errors"
+	"log/slog"
 
 	api "raft/gen/proto/raft/v1"
 	c "raft/internal/raft/core"
@@ -26,6 +27,8 @@ func (s *GRPCRaftPeerServer) AppendEntries(
 	req *api.AppendEntriesRequest,
 ) (*api.AppendEntriesResponse, error) {
 
+	slog.DebugContext(ctx, "append entries requested")
+
 	request := AppendEntriesRequestFromPB(req)
 	rsp := s.node.AppendEntries(ctx, request)
 
@@ -36,6 +39,8 @@ func (s *GRPCRaftPeerServer) RequestVote(
 	ctx context.Context,
 	req *api.VoteRequest,
 ) (*api.VoteResponse, error) {
+	
+	slog.DebugContext(ctx, "vote requested")
 
 	request := VoteRequestFromPB(req)
 	response := s.node.Vote(ctx, request)

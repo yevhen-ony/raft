@@ -20,6 +20,7 @@ const (
 )
 
 type Config struct {
+	Logger    LoggerConfig    `yaml:"logger"`
 	Listener  ListenerConfig  `yaml:"listener"`
 	Cluster   ClusterConfig   `yaml:"cluster"`
 	Transport TransportConfig `yaml:"transport"`

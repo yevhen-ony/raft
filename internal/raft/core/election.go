@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"math/rand/v2"
 	"time"
 )
@@ -43,6 +44,8 @@ func (r *Raft) RunElection(ctx context.Context) (bool, error) {
 
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
+
+	slog.DebugContext(ctx, "running election")
 
 	e, err := r.startElection(ctx)
 	if err != nil {
@@ -169,6 +172,7 @@ func (r *Raft) Vote(ctx context.Context, req VoteRequest) VoteResponse {
 	}
 
 	r.resetElection()
+	slog.DebugContext(ctx, "voted", "term", r.state.Term, "candidate", req.CandidateID)
 	return VoteResponse{Term: r.state.Term, Granted: true}
 }
 
@@ -211,6 +215,7 @@ func (r *Raft) RunElectionLoop(ctx context.Context) error {
 	timer := time.NewTimer(r.nextElectionTimeout())
 	defer timer.Stop()
 
+	slog.DebugContext(ctx, "running election loop")
 	for {
 		select {
 		case <-ctx.Done():

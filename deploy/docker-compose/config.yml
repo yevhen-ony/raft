@@ -5,14 +5,14 @@ listener:
   addr: 0.0.0.0:5001
 
 cluster:
-  self_id: n1
+  self_id: raft-0 
   nodes:
-    - id: n1
-      addr: 127.0.0.1:5001
-    - id: n2
-      addr: 127.0.0.1:5002
-    - id: n3
-      addr: 127.0.0.1:5003
+    - id: raft-0
+      addr: raft-0:5001
+    - id: raft-1 
+      addr: raft-1:5001
+    - id: raft-2 
+      addr: raft-2:5001
 
 raft:
   heartbeat_interval: 100ms

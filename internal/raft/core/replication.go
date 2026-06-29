@@ -109,6 +109,7 @@ func (r *Raft) replicateLogRangeTo(
 	rng LogRange,
 	results chan<- ReplicationResult,
 ) {
+	slog.DebugContext(ctx, "sending replication request", "term", term, "addr", peer.Addr)
 	for {
 		if err := ctx.Err(); err != nil {
 			results <- ReplicationResult{Peer: peer, Outcome: ReplicateFailed, Error: err}

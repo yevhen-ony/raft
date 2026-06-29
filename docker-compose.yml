@@ -1,0 +1,33 @@
+services:
+  raft-0:
+    profiles: ["cluster"]
+    image: ${RAFTD_TAG}
+    environment:
+      RAFT_SELF_ID: raft-0
+    volumes:
+      - ./deploy/docker-compose/config.yml:/etc/raft/config.yml:ro
+    
+  raft-1:
+    profiles: ["cluster"]
+    image: ${RAFTD_TAG}
+    environment:
+      RAFT_SELF_ID: raft-1
+    volumes:
+      - ./deploy/docker-compose/config.yml:/etc/raft/config.yml:ro
+
+  raft-2:
+    profiles: ["cluster"]
+    image: ${RAFTD_TAG}
+    environment:
+      RAFT_SELF_ID: raft-2
+    volumes:
+      - ./deploy/docker-compose/config.yml:/etc/raft/config.yml:ro
+
+  raftctl:
+    profiles: ["manual"]
+    image: ${RAFTCTL_TAG}
+    environment:
+      RAFT_ADDR: raft-0:${RAFTD_PORT}
+    command: ["/bin/sh"]
+    stdin_open: true
+    tty: true

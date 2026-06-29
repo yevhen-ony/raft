@@ -29,6 +29,8 @@ func run(args []string) error {
 	}
 	cfg.OverrideWithEnv()
 
+	SetupLogger(&cfg.Logger)	
+
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 

@@ -1,4 +1,4 @@
-FROM golang:1.25-bookworm AS build
+FROM golang:1.25 AS build
 
 WORKDIR /src
 
@@ -15,12 +15,8 @@ RUN CGO_ENABLED=0 GOOS=linux go build \
 
 FROM alpine:3.22
 
-RUN adduser -D -H -u 10001 raft
-
 COPY --from=build /out/raftd /usr/local/bin/raftd
 COPY cmd/raftd/config.yml /etc/raft/config.yml
-
-USER raft
 
 EXPOSE 5001
 
