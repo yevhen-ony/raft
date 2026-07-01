@@ -7,7 +7,7 @@ option go_package = "raft/gen/proto/kv/api/v1";
 service KVService {
   rpc Get(GetRequest) returns (GetResponse);
   rpc Put(PutRequest) returns (PutResponse);
-  rpc Del(DeleteRequest) returns (DeleteResponse);
+  rpc Delete(DeleteRequest) returns (DeleteResponse);
   rpc List(ListRequest) returns (ListResponse);
 }
 
@@ -16,11 +16,13 @@ message GetRequest{
 }
 
 message GetResponse{
-  string value = 1;
+  bool found = 1;
+  string value = 2;
 }
 
 message PutRequest {
-  KeyValue item = 1;
+  string key = 1;
+  string value = 2;
 }
 
 message PutResponse{}
@@ -29,7 +31,9 @@ message DeleteRequest {
   string key = 1;
 }
 
-message DeleteResponse {}
+message DeleteResponse {
+  bool deleted = 1;
+}
 
 message ListRequest {}
 

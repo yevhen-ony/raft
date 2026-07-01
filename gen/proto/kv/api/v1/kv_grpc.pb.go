@@ -2,7 +2,7 @@
 // versions:
 // - protoc-gen-go-grpc v1.6.1
 // - protoc             v6.33.6
-// source: kv/api/v1/api.proto
+// source: kv/api/v1/kv.proto
 
 package v1
 
@@ -19,10 +19,10 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	KVService_Get_FullMethodName  = "/api.v1.KVService/Get"
-	KVService_Put_FullMethodName  = "/api.v1.KVService/Put"
-	KVService_Del_FullMethodName  = "/api.v1.KVService/Del"
-	KVService_List_FullMethodName = "/api.v1.KVService/List"
+	KVService_Get_FullMethodName    = "/api.v1.KVService/Get"
+	KVService_Put_FullMethodName    = "/api.v1.KVService/Put"
+	KVService_Delete_FullMethodName = "/api.v1.KVService/Delete"
+	KVService_List_FullMethodName   = "/api.v1.KVService/List"
 )
 
 // KVServiceClient is the client API for KVService service.
@@ -31,7 +31,7 @@ const (
 type KVServiceClient interface {
 	Get(ctx context.Context, in *GetRequest, opts ...grpc.CallOption) (*GetResponse, error)
 	Put(ctx context.Context, in *PutRequest, opts ...grpc.CallOption) (*PutResponse, error)
-	Del(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
+	Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error)
 	List(ctx context.Context, in *ListRequest, opts ...grpc.CallOption) (*ListResponse, error)
 }
 
@@ -63,10 +63,10 @@ func (c *kVServiceClient) Put(ctx context.Context, in *PutRequest, opts ...grpc.
 	return out, nil
 }
 
-func (c *kVServiceClient) Del(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error) {
+func (c *kVServiceClient) Delete(ctx context.Context, in *DeleteRequest, opts ...grpc.CallOption) (*DeleteResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteResponse)
-	err := c.cc.Invoke(ctx, KVService_Del_FullMethodName, in, out, cOpts...)
+	err := c.cc.Invoke(ctx, KVService_Delete_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -89,7 +89,7 @@ func (c *kVServiceClient) List(ctx context.Context, in *ListRequest, opts ...grp
 type KVServiceServer interface {
 	Get(context.Context, *GetRequest) (*GetResponse, error)
 	Put(context.Context, *PutRequest) (*PutResponse, error)
-	Del(context.Context, *DeleteRequest) (*DeleteResponse, error)
+	Delete(context.Context, *DeleteRequest) (*DeleteResponse, error)
 	List(context.Context, *ListRequest) (*ListResponse, error)
 	mustEmbedUnimplementedKVServiceServer()
 }
@@ -107,8 +107,8 @@ func (UnimplementedKVServiceServer) Get(context.Context, *GetRequest) (*GetRespo
 func (UnimplementedKVServiceServer) Put(context.Context, *PutRequest) (*PutResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method Put not implemented")
 }
-func (UnimplementedKVServiceServer) Del(context.Context, *DeleteRequest) (*DeleteResponse, error) {
-	return nil, status.Error(codes.Unimplemented, "method Del not implemented")
+func (UnimplementedKVServiceServer) Delete(context.Context, *DeleteRequest) (*DeleteResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method Delete not implemented")
 }
 func (UnimplementedKVServiceServer) List(context.Context, *ListRequest) (*ListResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method List not implemented")
@@ -170,20 +170,20 @@ func _KVService_Put_Handler(srv interface{}, ctx context.Context, dec func(inter
 	return interceptor(ctx, in, info, handler)
 }
 
-func _KVService_Del_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+func _KVService_Delete_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(KVServiceServer).Del(ctx, in)
+		return srv.(KVServiceServer).Delete(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: KVService_Del_FullMethodName,
+		FullMethod: KVService_Delete_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(KVServiceServer).Del(ctx, req.(*DeleteRequest))
+		return srv.(KVServiceServer).Delete(ctx, req.(*DeleteRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -222,8 +222,8 @@ var KVService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _KVService_Put_Handler,
 		},
 		{
-			MethodName: "Del",
-			Handler:    _KVService_Del_Handler,
+			MethodName: "Delete",
+			Handler:    _KVService_Delete_Handler,
 		},
 		{
 			MethodName: "List",
@@ -231,5 +231,5 @@ var KVService_ServiceDesc = grpc.ServiceDesc{
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
-	Metadata: "kv/api/v1/api.proto",
+	Metadata: "kv/api/v1/kv.proto",
 }

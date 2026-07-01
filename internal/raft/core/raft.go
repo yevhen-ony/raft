@@ -73,6 +73,13 @@ func NewRaft(deps RaftDeps) (*Raft, error) {
 	return r, nil
 }
 
+func (r *Raft) IsLeader() bool {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	return r.state.Role == Leader
+}
+
 type noopCommandHandler struct{}
 
 func (noopCommandHandler) Apply(context.Context, []byte) error { return nil }

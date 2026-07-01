@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 
+	"raft/internal/kv"
 	raft "raft/internal/raft/core"
 )
 
@@ -45,7 +46,7 @@ func NewRaftCommitter(raft *raft.Raft) (*RaftCommitter, error) {
 func (c *RaftCommitter) Commit(ctx context.Context, command []byte) error {
 	_, err := c.raft.ProposeAndWait(ctx, command)
 	if errors.Is(err, raft.ErrNotLeader) {
-		return ErrNotLeader
+		return kv.ErrNotLeader
 	}
 	return err
 }

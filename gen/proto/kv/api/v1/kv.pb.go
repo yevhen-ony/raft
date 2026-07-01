@@ -2,7 +2,7 @@
 // versions:
 // 	protoc-gen-go v1.36.11
 // 	protoc        v6.33.6
-// source: kv/api/v1/api.proto
+// source: kv/api/v1/kv.proto
 
 package v1
 
@@ -30,7 +30,7 @@ type GetRequest struct {
 
 func (x *GetRequest) Reset() {
 	*x = GetRequest{}
-	mi := &file_kv_api_v1_api_proto_msgTypes[0]
+	mi := &file_kv_api_v1_kv_proto_msgTypes[0]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -42,7 +42,7 @@ func (x *GetRequest) String() string {
 func (*GetRequest) ProtoMessage() {}
 
 func (x *GetRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_kv_api_v1_api_proto_msgTypes[0]
+	mi := &file_kv_api_v1_kv_proto_msgTypes[0]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -55,7 +55,7 @@ func (x *GetRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetRequest.ProtoReflect.Descriptor instead.
 func (*GetRequest) Descriptor() ([]byte, []int) {
-	return file_kv_api_v1_api_proto_rawDescGZIP(), []int{0}
+	return file_kv_api_v1_kv_proto_rawDescGZIP(), []int{0}
 }
 
 func (x *GetRequest) GetKey() string {
@@ -67,14 +67,15 @@ func (x *GetRequest) GetKey() string {
 
 type GetResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Value         string                 `protobuf:"bytes,1,opt,name=value,proto3" json:"value,omitempty"`
+	Found         bool                   `protobuf:"varint,1,opt,name=found,proto3" json:"found,omitempty"`
+	Value         string                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetResponse) Reset() {
 	*x = GetResponse{}
-	mi := &file_kv_api_v1_api_proto_msgTypes[1]
+	mi := &file_kv_api_v1_kv_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -86,7 +87,7 @@ func (x *GetResponse) String() string {
 func (*GetResponse) ProtoMessage() {}
 
 func (x *GetResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_kv_api_v1_api_proto_msgTypes[1]
+	mi := &file_kv_api_v1_kv_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -99,7 +100,14 @@ func (x *GetResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetResponse.ProtoReflect.Descriptor instead.
 func (*GetResponse) Descriptor() ([]byte, []int) {
-	return file_kv_api_v1_api_proto_rawDescGZIP(), []int{1}
+	return file_kv_api_v1_kv_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *GetResponse) GetFound() bool {
+	if x != nil {
+		return x.Found
+	}
+	return false
 }
 
 func (x *GetResponse) GetValue() string {
@@ -111,14 +119,15 @@ func (x *GetResponse) GetValue() string {
 
 type PutRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Items         []*KeyValue            `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Value         string                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *PutRequest) Reset() {
 	*x = PutRequest{}
-	mi := &file_kv_api_v1_api_proto_msgTypes[2]
+	mi := &file_kv_api_v1_kv_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -130,7 +139,7 @@ func (x *PutRequest) String() string {
 func (*PutRequest) ProtoMessage() {}
 
 func (x *PutRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_kv_api_v1_api_proto_msgTypes[2]
+	mi := &file_kv_api_v1_kv_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -143,14 +152,21 @@ func (x *PutRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutRequest.ProtoReflect.Descriptor instead.
 func (*PutRequest) Descriptor() ([]byte, []int) {
-	return file_kv_api_v1_api_proto_rawDescGZIP(), []int{2}
+	return file_kv_api_v1_kv_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *PutRequest) GetItems() []*KeyValue {
+func (x *PutRequest) GetKey() string {
 	if x != nil {
-		return x.Items
+		return x.Key
 	}
-	return nil
+	return ""
+}
+
+func (x *PutRequest) GetValue() string {
+	if x != nil {
+		return x.Value
+	}
+	return ""
 }
 
 type PutResponse struct {
@@ -161,7 +177,7 @@ type PutResponse struct {
 
 func (x *PutResponse) Reset() {
 	*x = PutResponse{}
-	mi := &file_kv_api_v1_api_proto_msgTypes[3]
+	mi := &file_kv_api_v1_kv_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -173,7 +189,7 @@ func (x *PutResponse) String() string {
 func (*PutResponse) ProtoMessage() {}
 
 func (x *PutResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_kv_api_v1_api_proto_msgTypes[3]
+	mi := &file_kv_api_v1_kv_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -186,7 +202,7 @@ func (x *PutResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PutResponse.ProtoReflect.Descriptor instead.
 func (*PutResponse) Descriptor() ([]byte, []int) {
-	return file_kv_api_v1_api_proto_rawDescGZIP(), []int{3}
+	return file_kv_api_v1_kv_proto_rawDescGZIP(), []int{3}
 }
 
 type DeleteRequest struct {
@@ -198,7 +214,7 @@ type DeleteRequest struct {
 
 func (x *DeleteRequest) Reset() {
 	*x = DeleteRequest{}
-	mi := &file_kv_api_v1_api_proto_msgTypes[4]
+	mi := &file_kv_api_v1_kv_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -210,7 +226,7 @@ func (x *DeleteRequest) String() string {
 func (*DeleteRequest) ProtoMessage() {}
 
 func (x *DeleteRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_kv_api_v1_api_proto_msgTypes[4]
+	mi := &file_kv_api_v1_kv_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -223,7 +239,7 @@ func (x *DeleteRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteRequest.ProtoReflect.Descriptor instead.
 func (*DeleteRequest) Descriptor() ([]byte, []int) {
-	return file_kv_api_v1_api_proto_rawDescGZIP(), []int{4}
+	return file_kv_api_v1_kv_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *DeleteRequest) GetKey() string {
@@ -235,13 +251,14 @@ func (x *DeleteRequest) GetKey() string {
 
 type DeleteResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	Deleted       bool                   `protobuf:"varint,1,opt,name=deleted,proto3" json:"deleted,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *DeleteResponse) Reset() {
 	*x = DeleteResponse{}
-	mi := &file_kv_api_v1_api_proto_msgTypes[5]
+	mi := &file_kv_api_v1_kv_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -253,7 +270,7 @@ func (x *DeleteResponse) String() string {
 func (*DeleteResponse) ProtoMessage() {}
 
 func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_kv_api_v1_api_proto_msgTypes[5]
+	mi := &file_kv_api_v1_kv_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -266,7 +283,14 @@ func (x *DeleteResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteResponse.ProtoReflect.Descriptor instead.
 func (*DeleteResponse) Descriptor() ([]byte, []int) {
-	return file_kv_api_v1_api_proto_rawDescGZIP(), []int{5}
+	return file_kv_api_v1_kv_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *DeleteResponse) GetDeleted() bool {
+	if x != nil {
+		return x.Deleted
+	}
+	return false
 }
 
 type ListRequest struct {
@@ -277,7 +301,7 @@ type ListRequest struct {
 
 func (x *ListRequest) Reset() {
 	*x = ListRequest{}
-	mi := &file_kv_api_v1_api_proto_msgTypes[6]
+	mi := &file_kv_api_v1_kv_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -289,7 +313,7 @@ func (x *ListRequest) String() string {
 func (*ListRequest) ProtoMessage() {}
 
 func (x *ListRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_kv_api_v1_api_proto_msgTypes[6]
+	mi := &file_kv_api_v1_kv_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -302,19 +326,19 @@ func (x *ListRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListRequest.ProtoReflect.Descriptor instead.
 func (*ListRequest) Descriptor() ([]byte, []int) {
-	return file_kv_api_v1_api_proto_rawDescGZIP(), []int{6}
+	return file_kv_api_v1_kv_proto_rawDescGZIP(), []int{6}
 }
 
 type ListResponse struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Items         []*KeyValue            `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	Items         []*Pair                `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ListResponse) Reset() {
 	*x = ListResponse{}
-	mi := &file_kv_api_v1_api_proto_msgTypes[7]
+	mi := &file_kv_api_v1_kv_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -326,7 +350,7 @@ func (x *ListResponse) String() string {
 func (*ListResponse) ProtoMessage() {}
 
 func (x *ListResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_kv_api_v1_api_proto_msgTypes[7]
+	mi := &file_kv_api_v1_kv_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -339,17 +363,17 @@ func (x *ListResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListResponse.ProtoReflect.Descriptor instead.
 func (*ListResponse) Descriptor() ([]byte, []int) {
-	return file_kv_api_v1_api_proto_rawDescGZIP(), []int{7}
+	return file_kv_api_v1_kv_proto_rawDescGZIP(), []int{7}
 }
 
-func (x *ListResponse) GetItems() []*KeyValue {
+func (x *ListResponse) GetItems() []*Pair {
 	if x != nil {
 		return x.Items
 	}
 	return nil
 }
 
-type KeyValue struct {
+type Pair struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
 	Value         string                 `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
@@ -357,21 +381,21 @@ type KeyValue struct {
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *KeyValue) Reset() {
-	*x = KeyValue{}
-	mi := &file_kv_api_v1_api_proto_msgTypes[8]
+func (x *Pair) Reset() {
+	*x = Pair{}
+	mi := &file_kv_api_v1_kv_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *KeyValue) String() string {
+func (x *Pair) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*KeyValue) ProtoMessage() {}
+func (*Pair) ProtoMessage() {}
 
-func (x *KeyValue) ProtoReflect() protoreflect.Message {
-	mi := &file_kv_api_v1_api_proto_msgTypes[8]
+func (x *Pair) ProtoReflect() protoreflect.Message {
+	mi := &file_kv_api_v1_kv_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -382,68 +406,71 @@ func (x *KeyValue) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use KeyValue.ProtoReflect.Descriptor instead.
-func (*KeyValue) Descriptor() ([]byte, []int) {
-	return file_kv_api_v1_api_proto_rawDescGZIP(), []int{8}
+// Deprecated: Use Pair.ProtoReflect.Descriptor instead.
+func (*Pair) Descriptor() ([]byte, []int) {
+	return file_kv_api_v1_kv_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *KeyValue) GetKey() string {
+func (x *Pair) GetKey() string {
 	if x != nil {
 		return x.Key
 	}
 	return ""
 }
 
-func (x *KeyValue) GetValue() string {
+func (x *Pair) GetValue() string {
 	if x != nil {
 		return x.Value
 	}
 	return ""
 }
 
-var File_kv_api_v1_api_proto protoreflect.FileDescriptor
+var File_kv_api_v1_kv_proto protoreflect.FileDescriptor
 
-const file_kv_api_v1_api_proto_rawDesc = "" +
+const file_kv_api_v1_kv_proto_rawDesc = "" +
 	"\n" +
-	"\x13kv/api/v1/api.proto\x12\x06api.v1\"\x1e\n" +
+	"\x12kv/api/v1/kv.proto\x12\x06api.v1\"\x1e\n" +
 	"\n" +
 	"GetRequest\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\"#\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\"9\n" +
 	"\vGetResponse\x12\x14\n" +
-	"\x05value\x18\x01 \x01(\tR\x05value\"4\n" +
+	"\x05found\x18\x01 \x01(\bR\x05found\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\"4\n" +
 	"\n" +
-	"PutRequest\x12&\n" +
-	"\x05items\x18\x01 \x03(\v2\x10.api.v1.KeyValueR\x05items\"\r\n" +
+	"PutRequest\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value\"\r\n" +
 	"\vPutResponse\"!\n" +
 	"\rDeleteRequest\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\"\x10\n" +
-	"\x0eDeleteResponse\"\r\n" +
-	"\vListRequest\"6\n" +
-	"\fListResponse\x12&\n" +
-	"\x05items\x18\x01 \x03(\v2\x10.api.v1.KeyValueR\x05items\"2\n" +
-	"\bKeyValue\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\"*\n" +
+	"\x0eDeleteResponse\x12\x18\n" +
+	"\adeleted\x18\x01 \x01(\bR\adeleted\"\r\n" +
+	"\vListRequest\"2\n" +
+	"\fListResponse\x12\"\n" +
+	"\x05items\x18\x01 \x03(\v2\f.api.v1.PairR\x05items\".\n" +
+	"\x04Pair\x12\x10\n" +
 	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
-	"\x05value\x18\x02 \x01(\tR\x05value2\xd4\x01\n" +
+	"\x05value\x18\x02 \x01(\tR\x05value2\xd7\x01\n" +
 	"\tKVService\x12.\n" +
 	"\x03Get\x12\x12.api.v1.GetRequest\x1a\x13.api.v1.GetResponse\x12.\n" +
-	"\x03Put\x12\x12.api.v1.PutRequest\x1a\x13.api.v1.PutResponse\x124\n" +
-	"\x03Del\x12\x15.api.v1.DeleteRequest\x1a\x16.api.v1.DeleteResponse\x121\n" +
+	"\x03Put\x12\x12.api.v1.PutRequest\x1a\x13.api.v1.PutResponse\x127\n" +
+	"\x06Delete\x12\x15.api.v1.DeleteRequest\x1a\x16.api.v1.DeleteResponse\x121\n" +
 	"\x04List\x12\x13.api.v1.ListRequest\x1a\x14.api.v1.ListResponseB\x1aZ\x18raft/gen/proto/kv/api/v1b\x06proto3"
 
 var (
-	file_kv_api_v1_api_proto_rawDescOnce sync.Once
-	file_kv_api_v1_api_proto_rawDescData []byte
+	file_kv_api_v1_kv_proto_rawDescOnce sync.Once
+	file_kv_api_v1_kv_proto_rawDescData []byte
 )
 
-func file_kv_api_v1_api_proto_rawDescGZIP() []byte {
-	file_kv_api_v1_api_proto_rawDescOnce.Do(func() {
-		file_kv_api_v1_api_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_kv_api_v1_api_proto_rawDesc), len(file_kv_api_v1_api_proto_rawDesc)))
+func file_kv_api_v1_kv_proto_rawDescGZIP() []byte {
+	file_kv_api_v1_kv_proto_rawDescOnce.Do(func() {
+		file_kv_api_v1_kv_proto_rawDescData = protoimpl.X.CompressGZIP(unsafe.Slice(unsafe.StringData(file_kv_api_v1_kv_proto_rawDesc), len(file_kv_api_v1_kv_proto_rawDesc)))
 	})
-	return file_kv_api_v1_api_proto_rawDescData
+	return file_kv_api_v1_kv_proto_rawDescData
 }
 
-var file_kv_api_v1_api_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
-var file_kv_api_v1_api_proto_goTypes = []any{
+var file_kv_api_v1_kv_proto_msgTypes = make([]protoimpl.MessageInfo, 9)
+var file_kv_api_v1_kv_proto_goTypes = []any{
 	(*GetRequest)(nil),     // 0: api.v1.GetRequest
 	(*GetResponse)(nil),    // 1: api.v1.GetResponse
 	(*PutRequest)(nil),     // 2: api.v1.PutRequest
@@ -452,46 +479,45 @@ var file_kv_api_v1_api_proto_goTypes = []any{
 	(*DeleteResponse)(nil), // 5: api.v1.DeleteResponse
 	(*ListRequest)(nil),    // 6: api.v1.ListRequest
 	(*ListResponse)(nil),   // 7: api.v1.ListResponse
-	(*KeyValue)(nil),       // 8: api.v1.KeyValue
+	(*Pair)(nil),           // 8: api.v1.Pair
 }
-var file_kv_api_v1_api_proto_depIdxs = []int32{
-	8, // 0: api.v1.PutRequest.items:type_name -> api.v1.KeyValue
-	8, // 1: api.v1.ListResponse.items:type_name -> api.v1.KeyValue
-	0, // 2: api.v1.KVService.Get:input_type -> api.v1.GetRequest
-	2, // 3: api.v1.KVService.Put:input_type -> api.v1.PutRequest
-	4, // 4: api.v1.KVService.Del:input_type -> api.v1.DeleteRequest
-	6, // 5: api.v1.KVService.List:input_type -> api.v1.ListRequest
-	1, // 6: api.v1.KVService.Get:output_type -> api.v1.GetResponse
-	3, // 7: api.v1.KVService.Put:output_type -> api.v1.PutResponse
-	5, // 8: api.v1.KVService.Del:output_type -> api.v1.DeleteResponse
-	7, // 9: api.v1.KVService.List:output_type -> api.v1.ListResponse
-	6, // [6:10] is the sub-list for method output_type
-	2, // [2:6] is the sub-list for method input_type
-	2, // [2:2] is the sub-list for extension type_name
-	2, // [2:2] is the sub-list for extension extendee
-	0, // [0:2] is the sub-list for field type_name
+var file_kv_api_v1_kv_proto_depIdxs = []int32{
+	8, // 0: api.v1.ListResponse.items:type_name -> api.v1.Pair
+	0, // 1: api.v1.KVService.Get:input_type -> api.v1.GetRequest
+	2, // 2: api.v1.KVService.Put:input_type -> api.v1.PutRequest
+	4, // 3: api.v1.KVService.Delete:input_type -> api.v1.DeleteRequest
+	6, // 4: api.v1.KVService.List:input_type -> api.v1.ListRequest
+	1, // 5: api.v1.KVService.Get:output_type -> api.v1.GetResponse
+	3, // 6: api.v1.KVService.Put:output_type -> api.v1.PutResponse
+	5, // 7: api.v1.KVService.Delete:output_type -> api.v1.DeleteResponse
+	7, // 8: api.v1.KVService.List:output_type -> api.v1.ListResponse
+	5, // [5:9] is the sub-list for method output_type
+	1, // [1:5] is the sub-list for method input_type
+	1, // [1:1] is the sub-list for extension type_name
+	1, // [1:1] is the sub-list for extension extendee
+	0, // [0:1] is the sub-list for field type_name
 }
 
-func init() { file_kv_api_v1_api_proto_init() }
-func file_kv_api_v1_api_proto_init() {
-	if File_kv_api_v1_api_proto != nil {
+func init() { file_kv_api_v1_kv_proto_init() }
+func file_kv_api_v1_kv_proto_init() {
+	if File_kv_api_v1_kv_proto != nil {
 		return
 	}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
-			RawDescriptor: unsafe.Slice(unsafe.StringData(file_kv_api_v1_api_proto_rawDesc), len(file_kv_api_v1_api_proto_rawDesc)),
+			RawDescriptor: unsafe.Slice(unsafe.StringData(file_kv_api_v1_kv_proto_rawDesc), len(file_kv_api_v1_kv_proto_rawDesc)),
 			NumEnums:      0,
 			NumMessages:   9,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
-		GoTypes:           file_kv_api_v1_api_proto_goTypes,
-		DependencyIndexes: file_kv_api_v1_api_proto_depIdxs,
-		MessageInfos:      file_kv_api_v1_api_proto_msgTypes,
+		GoTypes:           file_kv_api_v1_kv_proto_goTypes,
+		DependencyIndexes: file_kv_api_v1_kv_proto_depIdxs,
+		MessageInfos:      file_kv_api_v1_kv_proto_msgTypes,
 	}.Build()
-	File_kv_api_v1_api_proto = out.File
-	file_kv_api_v1_api_proto_goTypes = nil
-	file_kv_api_v1_api_proto_depIdxs = nil
+	File_kv_api_v1_kv_proto = out.File
+	file_kv_api_v1_kv_proto_goTypes = nil
+	file_kv_api_v1_kv_proto_depIdxs = nil
 }

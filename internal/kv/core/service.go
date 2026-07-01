@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	cmd "raft/gen/proto/kv/cmd/v1"
+	"raft/internal/kv"
 )
 
 type KVDeps struct {
@@ -19,6 +20,8 @@ type KVService struct {
 	codec     Codec
 	committer Committer
 }
+
+var _ kv.KV = (*KVService)(nil)
 
 func NewKVService(deps KVDeps) (*KVService, error) {
 	if deps.State == nil {
@@ -38,44 +41,44 @@ func NewKVService(deps KVDeps) (*KVService, error) {
 	return kv, nil
 }
 
-func (kv *KVService) Get(_ context.Context, key Key) (Value, error) {
-	return kv.state.Get(key)
+func (s *KVService) Get(_ context.Context, key kv.Key) (kv.Value, error) {
+	return s.state.Get(key)
 }
 
-func (kv *KVService) List(_ context.Context) ([]Pair, error) {
-	return kv.state.List(), nil
+func (s *KVService) List(_ context.Context) ([]kv.Pair, error) {
+	return s.state.List(), nil
 }
 
-func (kv *KVService) Put(ctx context.Context, key Key, value Value) error {
-	if key == zeroK {
-		return ErrInvalidKey
+func (s *KVService) Put(ctx context.Context, key kv.Key, value kv.Value) error {
+	if key == kv.ZeroK {
+		return kv.ErrInvalidKey
 	}
 
-	return kv.commit(ctx, &cmd.Command{
+	return s.commit(ctx, &cmd.Command{
 		Operation: cmd.Operation_OPERATION_PUT,
 		Key:       string(key),
 		Value:     string(value),
 	})
 }
 
-func (kv *KVService) Delete(ctx context.Context, key Key) error {
-	if key == zeroK {
-		return ErrInvalidKey
+func (s *KVService) Delete(ctx context.Context, key kv.Key) error {
+	if key == kv.ZeroK {
+		return kv.ErrInvalidKey
 	}
 
-	return kv.commit(ctx, &cmd.Command{
+	return s.commit(ctx, &cmd.Command{
 		Operation: cmd.Operation_OPERATION_DELETE,
 		Key:       string(key),
 	})
 }
 
-func (kv *KVService) commit(ctx context.Context, command *cmd.Command) error {
-	raw, err := kv.codec.Marshal(command)
+func (s *KVService) commit(ctx context.Context, command *cmd.Command) error {
+	raw, err := s.codec.Marshal(command)
 	if err != nil {
 		return fmt.Errorf("marshal command: %w", err)
 	}
 
-	if err := kv.committer.Commit(ctx, raw); err != nil {
+	if err := s.committer.Commit(ctx, raw); err != nil {
 		return fmt.Errorf("commit command: %w", err)
 	}
 	return nil
