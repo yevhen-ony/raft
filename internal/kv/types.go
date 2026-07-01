@@ -12,8 +12,8 @@ var (
 type Key string
 type Value string
 type Pair struct {
-	Key   Key
-	Value Value
+	Key   Key   `json:"key"`
+	Value Value `json:"val"`
 }
 
 const ZeroK Key = ""

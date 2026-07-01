@@ -4,33 +4,33 @@ services:
     image: ${RAFTD_TAG}
     environment:
       RAFT_SELF_ID: raft-0
-      RAFT_LOG_LEVEL: ${RAFTD_LOG_LEVEL}
+      LOG_LEVEL: ${LOG_LEVEL}
     volumes:
-      - ./deploy/docker-compose/config.yml:/etc/raft/config.yml:ro
+      - ./raftd_config.yml:/etc/raft/config.yml:ro
     
   raft-1:
     profiles: ["cluster"]
     image: ${RAFTD_TAG}
     environment:
       RAFT_SELF_ID: raft-1
-      RAFT_LOG_LEVEL: ${RAFTD_LOG_LEVEL}
+      LOG_LEVEL: ${LOG_LEVEL}
     volumes:
-      - ./deploy/docker-compose/config.yml:/etc/raft/config.yml:ro
+      - ./raftd_config.yml:/etc/raft/config.yml:ro
 
   raft-2:
     profiles: ["cluster"]
     image: ${RAFTD_TAG}
     environment:
       RAFT_SELF_ID: raft-2
-      RAFT_LOG_LEVEL: ${RAFTD_LOG_LEVEL}
+      LOG_LEVEL: ${LOG_LEVEL}
     volumes:
-      - ./deploy/docker-compose/config.yml:/etc/raft/config.yml:ro
+      - ./raftd_config.yml:/etc/raft/config.yml:ro
 
   raftctl:
     profiles: ["manual"]
     image: ${RAFTCTL_TAG}
     environment:
-      RAFT_ADDR: raft-0:${RAFTD_PORT}
+      RAFT_ADDR: raft-0:5001
     command: ["/bin/sh"]
     stdin_open: true
     tty: true

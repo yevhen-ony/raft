@@ -29,7 +29,7 @@ func run(args []string) error {
 	}
 	cfg.OverwriteWithEnv()
 
-	SetupLogger(&cfg.Logger)	
+	SetupLogger(&cfg.Logger)
 
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
@@ -43,7 +43,7 @@ func run(args []string) error {
 	}
 	defer app.Close()
 
-	if err := app.Run(ctx); err != nil {
+	if err := app.Run(ctx, &cfg.Listener); err != nil {
 		return fmt.Errorf("app run: %w", err)
 	}
 	return nil
@@ -54,7 +54,7 @@ type params struct {
 }
 
 func parseParams(args []string) (*params, error) {
-	fs := flag.NewFlagSet("raftd", flag.ContinueOnError)
+	fs := flag.NewFlagSet("kvd", flag.ContinueOnError)
 	configPath := fs.String("config", "./config.yml", "config path")
 
 	if err := fs.Parse(args); err != nil {

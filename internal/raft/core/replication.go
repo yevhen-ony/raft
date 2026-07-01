@@ -61,9 +61,9 @@ LOOP:
 				}
 
 			case ReplicateFailed:
-				slog.ErrorContext(ctx, "replication failed", "peer", res.Peer.ID, "error", res.Error)
 				rejected++
 				if rejected >= rr.Quorum.Reject {
+					slog.ErrorContext(ctx, "replication quorum failed", "peer", res.Peer.ID, "error", res.Error)
 					break LOOP
 				}
 

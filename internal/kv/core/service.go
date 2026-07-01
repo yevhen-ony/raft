@@ -12,13 +12,13 @@ import (
 type KVDeps struct {
 	State     *State
 	Codec     Codec
-	Committer Committer
+	Committer CommandCommitter
 }
 
 type KVService struct {
 	state     *State
 	codec     Codec
-	committer Committer
+	committer CommandCommitter
 }
 
 var _ kv.KV = (*KVService)(nil)

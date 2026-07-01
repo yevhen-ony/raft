@@ -1,19 +1,23 @@
+kv:
+  mode: raft 
+  codec: json
+
 logger:
-  level: debug
+  level: debug 
 
 listener:
   addr: 0.0.0.0:5001
 
 raft:
   cluster:
-    self_id: n1
+    self_id: kv-0 
     nodes:
-      - id: n1
-        addr: 127.0.0.1:5001
-      - id: n2
-        addr: 127.0.0.1:5002
-      - id: n3
-        addr: 127.0.0.1:5003
+      - id: kv-0
+        addr: kv-0:5001
+      - id: kv-1 
+        addr: kv-1:5001
+      - id: kv-2 
+        addr: kv-2:5001
 
   runtime:
     heartbeat_interval: 100ms

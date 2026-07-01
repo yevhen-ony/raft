@@ -1,3 +1,7 @@
+kv:
+  mode: raft 
+  codec: json
+
 logger:
   level: debug
 

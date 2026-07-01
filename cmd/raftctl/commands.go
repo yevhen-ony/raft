@@ -43,6 +43,9 @@ func (e *executor) Exec(ctx context.Context, cmd string) commandResult {
 	default:
 		r.Result, r.Error = nil, errors.New("unknown cmd")
 	}
+	if r.Error != nil {
+		r.Result = nil
+	}
 
 	return r
 }

@@ -22,7 +22,7 @@ type App struct {
 }
 
 func NewApp(ctx context.Context, cfg *Config) (*App, error) {
-	coreCfg, err := cfg.ToCore()
+	coreCfg, err := cfg.Raft.ToCore()
 	if err != nil {
 		return nil, fmt.Errorf("config: %w", err)
 	}

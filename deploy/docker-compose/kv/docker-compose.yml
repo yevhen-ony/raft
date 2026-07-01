@@ -1,0 +1,36 @@
+services:
+  kv-0:
+    profiles: ["cluster"]
+    image: ${KVD_TAG}
+    environment:
+      RAFT_SELF_ID: kv-0
+      LOG_LEVEL: ${LOG_LEVEL}
+    volumes:
+      - ./kvd_config.yml:/etc/kv/config.yml:ro
+
+  kv-1:
+    profiles: ["cluster"]
+    image: ${KVD_TAG}
+    environment:
+      RAFT_SELF_ID: kv-1
+      LOG_LEVEL: ${LOG_LEVEL}
+    volumes:
+      - ./kvd_config.yml:/etc/kv/config.yml:ro
+
+  kv-2:
+    profiles: ["cluster"]
+    image: ${KVD_TAG}
+    environment:
+      RAFT_SELF_ID: kv-2
+      LOG_LEVEL: ${LOG_LEVEL}
+    volumes:
+      - ./kvd_config.yml:/etc/kv/config.yml:ro
+    
+  kvcli:
+    profiles: ["manual"]
+    image: ${KVCLI_TAG}
+    environment:
+      KVCLI_ADDRS: ${KVCLI_ADDRS} 
+    command: ["/bin/sh"]
+    stdin_open: true
+    tty: true

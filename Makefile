@@ -6,18 +6,28 @@ endif
 PROTO_DIR := proto
 GEN_DIR := gen
 MODULE := raft 
-PROJECT := raft 
+PROJECT := raft
 
 RAFTD_TAG ?= raftd:local
-RAFTD_DOCKERFILE := deploy/docker/raftd.Dockerfile
-
+RAFTD_DOCKERFILE := deploy/docker/raft/raftd.Dockerfile
 RAFTCTL_TAG ?= raftctl:local
-RAFTCTL_DOCKERFILE := deploy/docker/raftctl.Dockerfile
+RAFTCTL_DOCKERFILE := deploy/docker/raft/raftctl.Dockerfile
+RAFT_COMPOSE_FILE := deploy/docker-compose/raft/docker-compose.yml
+
+KVD_TAG ?= kvd:local
+KVD_DOCKERFILE := deploy/docker/kv/kvd.Dockerfile
+KVCLI_TAG ?= kvcli:local
+KVCLI_DOCKERFILE := deploy/docker/kv/kvcli.Dockerfile
+KV_COMPOSE_FILE := deploy/docker-compose/kv/docker-compose.yml
 
 PROTO_FILES := $(shell find $(PROTO_DIR) -name "*.proto")
-COMPOSE = docker compose -f docker-compose.yml -p $(PROJECT)
 
-.PHONY: gen build-raftd build-raftctl build up down logs
+RAFT_COMPOSE = docker compose -f $(RAFT_COMPOSE_FILE) -p $(PROJECT)-raft
+KV_COMPOSE = docker compose -f $(KV_COMPOSE_FILE) -p $(PROJECT)-kv
+
+.PHONY: gen
+.PHONY: build-raftd build-raftctl build-raft up-raft down-raft logs-raft client-raft
+.PHONY: build-kvd build-kvcli build-kv up-kv down-kv logs-kv client-kv
 
 gen:
 	protoc -I $(PROTO_DIR) \
@@ -33,17 +43,36 @@ build-raftd:
 build-raftctl:
 	docker build -f $(RAFTCTL_DOCKERFILE) -t $(RAFTCTL_TAG) .
 
-build: build-raftd build-raftctl 
+build-raft: build-raftd build-raftctl 
 
-up:
-	$(COMPOSE) --profile cluster up -d
+up-raft:
+	$(RAFT_COMPOSE) --profile cluster up -d
 
-down:
-	$(COMPOSE) --profile cluster down
+down-raft:
+	$(RAFT_COMPOSE) --profile cluster down
 
-logs:
-	$(COMPOSE) --profile cluster logs -f
+logs-raft:
+	$(RAFT_COMPOSE) --profile cluster logs -f
 
-client:
-	$(COMPOSE) run --rm raftctl
+client-raft:
+	$(RAFT_COMPOSE) run --rm raftctl
 
+build-kvd:
+	docker build -f $(KVD_DOCKERFILE) -t $(KVD_TAG) .
+
+build-kvcli:
+	docker build -f $(KVCLI_DOCKERFILE) -t $(KVCLI_TAG) .
+
+build-kv: build-kvd build-kvcli 
+
+up-kv:
+	$(KV_COMPOSE) --profile cluster up -d
+
+down-kv:
+	$(KV_COMPOSE) --profile cluster down
+
+logs-kv:
+	$(KV_COMPOSE) --profile cluster logs -f
+
+client-kv:
+	$(KV_COMPOSE) run --rm kvcli 

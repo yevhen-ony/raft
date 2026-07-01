@@ -10,6 +10,7 @@ import (
 	"raft/internal/kv"
 
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 type NodeClient struct {
@@ -31,7 +32,7 @@ func NewKVTransport(addrs []string) (*KVTransport, error) {
 
 	clients := make([]*NodeClient, len(addrs))
 	for i, addr := range addrs {
-		conn, err := grpc.NewClient(addr)
+		conn, err := newConn(addr)
 		if err != nil {
 			closeClients(clients)
 			return nil, fmt.Errorf("create conn for %s: %w", addr, err)
@@ -183,4 +184,10 @@ func closeClients(clients []*NodeClient) error {
 		}
 	}
 	return lastErr
+}
+
+func newConn(addr string) (*grpc.ClientConn, error) {
+	opts := grpc.WithTransportCredentials(insecure.NewCredentials())
+
+	return grpc.NewClient(addr, opts)
 }

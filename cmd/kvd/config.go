@@ -2,23 +2,38 @@ package main
 
 import (
 	"fmt"
-	yaml "gopkg.in/yaml.v3"
 	"os"
+
+	yaml "gopkg.in/yaml.v3"
+	kvnode "raft/internal/kv/node"
 )
 
 const (
-	envLoggerLevel = "LOG_LEVEL"
+	envLoggerLevel  = "LOG_LEVEL"
 	envListenerAddr = "LISTENER_ADDR"
 )
 
 type Config struct {
 	Logger   LoggerConfig   `yaml:"logger"`
+	KV       kvnode.Config  `yaml:"kv"`
 	Listener ListenerConfig `yaml:"listener"`
 	Raft     RaftConfig     `yaml:"raft"`
 }
 
 type ListenerConfig struct {
 	Addr string `yaml:"addr"`
+}
+
+func (cfg *Config) OverwriteWithEnv() {
+	valueFromEnv(&cfg.Logger.Level, envLoggerLevel)
+	valueFromEnv(&cfg.Listener.Addr, envListenerAddr)
+	cfg.Raft.OverwriteWithEnv()
+}
+
+func valueFromEnv(target *string, name string) {
+	if value := os.Getenv(name); value != "" {
+		*target = value
+	}
 }
 
 func ConfigFromYAML(path string) (*Config, error) {
@@ -34,15 +49,4 @@ func ConfigFromYAML(path string) (*Config, error) {
 	}
 
 	return cfg, nil
-}
-
-func (cfg *Config) OverwriteWithEnv() {
-	valueFromEnv(&cfg.Logger.Level, envLoggerLevel)
-	cfg.Raft.OverwriteWithEnv()
-}
-
-func valueFromEnv(target *string, name string) {
-	if value := os.Getenv(name); value != "" {
-		*target = value
-	}
 }

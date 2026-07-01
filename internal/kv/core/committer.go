@@ -9,24 +9,24 @@ import (
 	raft "raft/internal/raft/core"
 )
 
-type Committer interface {
+type CommandCommitter interface {
 	Commit(context.Context, []byte) error
 }
 
 // Local committer
 
-type LocalCommitter struct {
+type LocalCommandCommitter struct {
 	applier CommandApplier 
 }
 
-func NewLocalCommitter(applier CommandApplier) (*LocalCommitter, error) {
+func NewLocalCommandCommitter(applier CommandApplier) (*LocalCommandCommitter, error) {
 	if applier == nil {
 		return nil, fmt.Errorf("missing applier")
 	}
-	return &LocalCommitter{applier: applier}, nil
+	return &LocalCommandCommitter{applier: applier}, nil
 }
 
-func (c *LocalCommitter) Commit(ctx context.Context, command []byte) error {
+func (c *LocalCommandCommitter) Commit(ctx context.Context, command []byte) error {
 	return c.applier.Apply(ctx, command)
 }
 
